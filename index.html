@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>TimBot — Skip the line. Keep the ritual.</title>
+<meta name="description" content="TimBot — commuter auto-order. Pre-pay your week, order pulls itself when you're 10 minutes out." />
+<meta name="theme-color" content="#c25a30" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="TimBot" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+<meta property="og:title" content="TimBot — Skip the line. Keep the ritual." />
+<meta property="og:description" content="Commuter auto-order prototype. Try the flow." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="icons/icon-512.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #f4ede0;
+    --paper-2: #ece4d2;
+    --paper-3: #e3d9c2;
+    --ink: #2a241d;
+    --ink-soft: #5b5045;
+    --ink-mute: #8a7e70;
+    --ink-faint: rgba(42, 36, 29, 0.12);
+    --accent: #c25a30;
+    --accent-2: #d96c3e;
+    --accent-soft: rgba(194, 90, 48, 0.13);
+    --accent-edge: rgba(194, 90, 48, 0.35);
+    --success: #4d7a48;
+    --success-soft: rgba(77, 122, 72, 0.14);
+    --warn: #b6803a;
+    --paper-card: #fffefa;
+    --shadow-card: 0 2px 6px rgba(42, 36, 29, 0.06), 0 8px 20px rgba(42, 36, 29, 0.06);
+    --shadow-lift: 0 6px 14px rgba(42, 36, 29, 0.10), 0 18px 36px rgba(42, 36, 29, 0.10);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overscroll-behavior: none;
+  }
+  body {
+    background:
+      radial-gradient(circle at 15% 5%, rgba(194, 90, 48, 0.05), transparent 40%),
+      radial-gradient(circle at 85% 95%, rgba(0,0,0,0.04), transparent 50%),
+      var(--paper);
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, select { font-family: inherit; }
+  a { color: inherit; }
+
+  /* ===== Desktop frame ===== */
+  .desktop-frame {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    gap: 28px;
+  }
+  .desktop-label {
+    display: none;
+    max-width: 240px;
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    color: var(--ink-soft);
+    line-height: 1.35;
+  }
+  .desktop-label .stamp {
+    display: inline-block;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 3px 10px;
+    transform: rotate(-3deg);
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    margin: 6px 0;
+  }
+  .phone-frame {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100svh;
+    background: var(--paper-card);
+    position: relative;
+    overflow: hidden;
+  }
+  @media (min-width: 760px) {
+    .desktop-label { display: block; }
+    .phone-frame {
+      width: 390px;
+      height: 844px;
+      max-height: calc(100vh - 64px);
+      border: 14px solid #1a1612;
+      border-radius: 48px;
+      box-shadow: 0 30px 80px rgba(42, 36, 29, 0.25), 0 8px 20px rgba(42, 36, 29, 0.15);
+    }
+    .phone-frame::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 26px;
+      background: #1a1612;
+      border-radius: 0 0 16px 16px;
+      z-index: 100;
+    }
+  }
+
+  /* ===== App container ===== */
+  #app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .view {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .view.lockscreen-bg {
+    background: linear-gradient(165deg, #1a1612 0%, #2a241d 60%, #3a3025 100%);
+    color: #fff8e8;
+  }
+  .view-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .view-scroll::-webkit-scrollbar { width: 0; }
+  .pad {
+    padding: 16px 22px 28px;
+  }
+  .pad-top {
+    padding: max(env(safe-area-inset-top), 14px) 22px 0;
+  }
+  .pad-bottom {
+    padding: 18px 22px max(env(safe-area-inset-bottom), 18px);
+  }
+  .footer-cta {
+    flex-shrink: 0;
+    padding: 14px 22px max(env(safe-area-inset-bottom), 18px);
+    background: linear-gradient(180deg, transparent 0%, var(--paper) 30%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ===== Status bar (real one, simulated) ===== */
+  .statusbar {
+    padding: max(env(safe-area-inset-top), 14px) 22px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .lockscreen-bg .statusbar { color: #fff8e8; }
+  .statusbar .right {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  /* ===== Top bar ===== */
+  .topbar {
+    flex-shrink: 0;
+    padding: 6px 22px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .iconbtn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    transition: background 0.15s;
+  }
+  .iconbtn:hover, .iconbtn:active { background: var(--ink-faint); }
+  .iconbtn.back::before { content: "←"; }
+  .iconbtn.close::before { content: "✕"; }
+  .iconbtn.menu::before { content: "···"; letter-spacing: 1px; }
+  .iconbtn.gear::before { content: "⚙"; font-size: 22px; }
+  .iconbtn.share::before { content: "↗"; font-size: 20px; }
+  .topbar .title {
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  /* ===== Progress segments ===== */
+  .progress {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    padding: 4px 22px 12px;
+  }
+  .progress .seg {
+    height: 4px;
+    background: var(--ink-faint);
+    border-radius: 3px;
+    transition: background 0.3s;
+  }
+  .progress .seg.on { background: var(--accent); }
+
+  /* ===== Typography ===== */
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .eyebrow.mute { color: var(--ink-soft); }
+  h1.title {
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1.1;
+    color: var(--ink);
+    margin: 4px 0 8px;
+    letter-spacing: -0.4px;
+  }
+  h2.title {
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.15;
+    color: var(--ink);
+    margin: 4px 0 6px;
+    letter-spacing: -0.3px;
+  }
+  .serif {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.05;
+    color: var(--ink);
+    margin: 0;
+    letter-spacing: -0.4px;
+  }
+  .serif.lg { font-size: 38px; }
+  .serif.xl { font-size: 44px; }
+  .sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    margin: 0;
+  }
+  .mute { color: var(--ink-soft); }
+  .faint { color: var(--ink-mute); }
+  .center { text-align: center; }
+
+  /* ===== Buttons ===== */
+  .btn {
+    font-weight: 600;
+    font-size: 15px;
+    padding: 15px 18px;
+    border-radius: 14px;
+    background: var(--ink);
+    color: #fff8e8;
+    text-align: center;
+    border: 2px solid var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+    user-select: none;
+    width: 100%;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(194, 90, 48, 0.30);
+  }
+  .btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .btn.ghost:hover { background: var(--ink-faint); }
+  .btn.subtle {
+    background: var(--paper-2);
+    color: var(--ink);
+    border-color: transparent;
+  }
+  .btn.subtle:hover { background: var(--paper-3); }
+  .btn.danger {
+    background: transparent;
+    color: var(--accent);
+    border-color: transparent;
+  }
+  .btn.sm { padding: 11px 14px; font-size: 13px; border-radius: 11px; }
+  .btn[disabled] { opacity: 0.45; pointer-events: none; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+  .link {
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    cursor: pointer;
+    padding: 8px;
+    background: none;
+    border: none;
+  }
+  .link:hover { color: var(--ink); }
+
+  /* ===== Chip ===== */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+  }
+  .chip:active { transform: scale(0.97); }
+  .chip.on { background: var(--ink); color: #fff8e8; }
+  .chip.acc { border-color: var(--accent); color: var(--accent); }
+  .chip.acc.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chip.sm { font-size: 12px; padding: 6px 11px; }
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ===== Card ===== */
+  .card {
+    border-radius: 18px;
+    padding: 16px;
+    background: var(--paper-card);
+    box-shadow: var(--shadow-card);
+  }
+  .card.acc {
+    background: var(--accent-soft);
+    border: 1.5px solid var(--accent-edge);
+    box-shadow: none;
+  }
+  .card.dark {
+    background: var(--ink);
+    color: #fff8e8;
+    box-shadow: 0 6px 16px rgba(42, 36, 29, 0.2);
+  }
+  .card.soft {
+    background: var(--paper-2);
+    box-shadow: none;
+  }
+  .card.lift {
+    box-shadow: var(--shadow-lift);
+  }
+  .card-press {
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  .card-press:active { transform: scale(0.98); }
+  .card-press:hover { box-shadow: var(--shadow-lift); }
+
+  /* ===== Badge ===== */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+  }
+  .badge.dark { background: var(--ink); color: #fff8e8; }
+  .badge.success { background: var(--success); }
+  .badge.warn { background: var(--warn); }
+  .badge.outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+  .badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 2px;
+    animation: pulseDot 1.5s ease-in-out infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ===== Avatar ===== */
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(42,36,29,0.12);
+  }
+  .avatar.sm { width: 32px; height: 32px; font-size: 13px; }
+  .avatar.lg { width: 64px; height: 64px; font-size: 26px; }
+  .avatar.xl { width: 92px; height: 92px; font-size: 38px; }
+
+  /* ===== Inputs ===== */
+  .input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--ink-faint);
+    background: var(--paper-card);
+    font-size: 16px;
+    color: var(--ink);
+    transition: border 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .input-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ===== Toggle ===== */
+  .toggle {
+    width: 46px; height: 26px;
+    border-radius: 13px;
+    background: var(--ink-faint);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute;
+    left: 2px; top: 2px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(20px); }
+
+  /* ===== Day pills ===== */
+  .weekgrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day {
+    aspect-ratio: 1 / 1.2;
+    border: 1.5px solid var(--ink-faint);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--paper-card);
+    cursor: pointer;
+    transition: background 0.15s, border 0.15s, color 0.15s;
+    user-select: none;
+  }
+  .day .d { font-size: 15px; font-weight: 700; }
+  .day.on {
+    background: var(--ink);
+    color: #fff8e8;
+    border-color: var(--ink);
+  }
+  .day.today { border-color: var(--accent); }
+  .day.today.on { background: var(--accent); border-color: var(--accent); }
+  .day.disabled { opacity: 0.4; cursor: not-allowed; }
+  .day.done { background: var(--success-soft); color: var(--success); border-color: rgba(77, 122, 72, 0.3); }
+  .day.skipped { background: var(--paper-2); color: var(--ink-mute); border-color: var(--ink-faint); }
+
+  /* ===== Plan tier ===== */
+  .tier {
+    border: 2px solid var(--ink-faint);
+    border-radius: 18px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--paper-card);
+    position: relative;
+    cursor: pointer;
+    transition: border 0.15s, background 0.15s, transform 0.1s;
+  }
+  .tier:active { transform: scale(0.99); }
+  .tier.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .tier .num {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+    color: var(--ink);
+    background: var(--paper-card);
+  }
+  .tier.selected .num { border-color: var(--accent); color: var(--accent); }
+  .tier .body { flex: 1; line-height: 1.3; min-width: 0; }
+  .tier .body .t1 { font-weight: 700; font-size: 14px; }
+  .tier .body .t2 { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .tier .body .save { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: 3px; }
+  .tier .price { text-align: right; line-height: 1.1; flex-shrink: 0; }
+  .tier .price .p1 { font-weight: 700; font-size: 17px; }
+  .tier .price .p1 small { font-size: 11px; color: var(--ink-soft); font-weight: 500; }
+  .tier .price .p2 { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .tier .ribbon { position: absolute; top: -10px; right: 12px; }
+
+  /* ===== Food/drink tiles ===== */
+  .tile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .tile {
+    aspect-ratio: 1 / 0.9;
+    border-radius: 14px;
+    background: var(--paper-2);
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: border 0.15s, transform 0.1s, background 0.15s;
+    user-select: none;
+    padding: 10px;
+    text-align: center;
+    position: relative;
+  }
+  .tile:active { transform: scale(0.97); }
+  .tile.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .tile .emoji {
+    font-size: 28px;
+    line-height: 1;
+  }
+  .tile .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .tile .price {
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .tile .check {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .tile.selected .check { opacity: 1; }
+
+  /* ===== State pill ===== */
+  .state-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .state-pill .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .state-pill.scheduled { background: var(--paper-2); color: var(--ink-soft); }
+  .state-pill.preparing { background: var(--accent-soft); color: var(--accent); }
+  .state-pill.preparing .dot { animation: pulseDot 1.2s ease-in-out infinite; }
+  .state-pill.ready { background: var(--success-soft); color: var(--success); }
+  .state-pill.picked { background: var(--paper-2); color: var(--ink-soft); }
+  .state-pill.skipped { background: var(--paper-2); color: var(--ink-mute); }
+
+  /* ===== Lock screen ===== */
+  .lock-time {
+    font-weight: 200;
+    font-size: 76px;
+    text-align: center;
+    letter-spacing: -3px;
+    margin-top: 40px;
+    line-height: 1;
+  }
+  .lock-date {
+    font-size: 16px;
+    text-align: center;
+    opacity: 0.85;
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+  .notif {
+    background: rgba(255, 248, 232, 0.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,248,232,0.18);
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .notif:active { transform: scale(0.98); }
+  .notif:hover { background: rgba(255, 248, 232, 0.18); }
+  .notif .head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.75;
+    font-weight: 600;
+  }
+  .notif .head b { color: var(--accent-2); font-weight: 800; letter-spacing: 1px; }
+  .notif .ttl { font-weight: 700; font-size: 15px; }
+  .notif .msg { font-size: 13px; opacity: 0.92; line-height: 1.4; }
+
+  /* ===== QR code (CSS-only stylized) ===== */
+  .qr {
+    width: 180px;
+    height: 180px;
+    background: var(--paper-card);
+    border: 6px solid var(--ink);
+    border-radius: 16px;
+    padding: 12px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .qr svg { display: block; width: 100%; height: 100%; }
+  .qr .qrlbl {
+    position: absolute;
+    bottom: -22px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--ink-soft);
+  }
+
+  /* ===== Order item row ===== */
+  .item-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
+  }
+  .item-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--paper-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .item-icon.acc { background: var(--accent-soft); }
+  .item-body { flex: 1; min-width: 0; }
+  .item-body .name { font-weight: 600; font-size: 14px; }
+  .item-body .opts { font-size: 12px; color: var(--ink-soft); }
+
+  /* ===== Time picker ===== */
+  .time-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border: 1.5px solid var(--ink-faint);
+    border-radius: 12px;
+    font-size: 14px;
+    gap: 12px;
+  }
+  .time-pill .label { color: var(--ink-soft); font-weight: 600; font-size: 13px; }
+  .time-pill .val { font-weight: 700; color: var(--accent); font-size: 16px; }
+  .time-pill input[type="time"] {
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    text-align: right;
+    width: 90px;
+    padding: 0;
+  }
+
+  /* ===== Toast ===== */
+  #toast-rail {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 16px 24px;
+    width: 100%;
+    max-width: 360px;
+    z-index: 9000;
+    pointer-events: none;
+  }
+  @media (min-width: 760px) {
+    #toast-rail { bottom: 32px; }
+  }
+  .toast {
+    background: var(--ink);
+    color: #fff8e8;
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lift);
+    margin-top: 8px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+  }
+  .toast.in { opacity: 1; transform: translateY(0); }
+  .toast .ico { font-size: 18px; }
+
+  /* ===== Demo panel (floating) ===== */
+  #demo-fab {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff8e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--shadow-lift);
+    z-index: 8000;
+    cursor: pointer;
+    border: 2px solid var(--paper);
+    transition: transform 0.15s;
+  }
+  #demo-fab:hover { transform: scale(1.05); }
+  #demo-fab:active { transform: scale(0.95); }
+  #demo-fab::before { content: "✦"; }
+
+  #demo-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 100%;
+    max-width: 360px;
+    background: var(--paper);
+    box-shadow: -10px 0 40px rgba(42, 36, 29, 0.2);
+    z-index: 9100;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #demo-panel.open { transform: translateX(0); }
+  .demo-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(42, 36, 29, 0.4);
+    z-index: 9050;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .demo-backdrop.open { opacity: 1; pointer-events: auto; }
+  .demo-header {
+    padding: max(env(safe-area-inset-top), 18px) 22px 14px;
+    border-bottom: 1px solid var(--ink-faint);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .demo-header h3 {
+    margin: 0;
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--ink);
+  }
+  .demo-header h3 .acc { color: var(--accent); }
+  .demo-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 22px max(env(safe-area-inset-bottom), 22px);
+  }
+  .demo-section {
+    margin-bottom: 22px;
+  }
+  .demo-section h4 {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .demo-user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--paper-card);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .demo-user-row:hover { background: var(--paper-2); }
+  .demo-user-row:active { transform: scale(0.99); }
+  .demo-user-row.active {
+    background: var(--accent-soft);
+    border: 1.5px solid var(--accent-edge);
+    padding: 8px 10px;
+  }
+  .demo-user-row .info { flex: 1; min-width: 0; }
+  .demo-user-row .info .nm { font-weight: 600; font-size: 14px; }
+  .demo-user-row .info .meta { font-size: 11px; color: var(--ink-soft); }
+  .demo-user-row .del {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-mute);
+    font-size: 14px;
+  }
+  .demo-user-row .del:hover { background: var(--ink-faint); color: var(--accent); }
+
+  /* ===== Animations ===== */
+  .view-enter {
+    animation: slideInRight 0.28s ease-out forwards;
+  }
+  .view-enter-back {
+    animation: slideInLeft 0.28s ease-out forwards;
+  }
+  .view-enter-up {
+    animation: slideInUp 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  }
+  .view-enter-fade {
+    animation: fadeIn 0.25s ease-out forwards;
+  }
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0.6; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); opacity: 0.6; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideInUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .pop-in { animation: pop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1); }
+
+  /* ===== Countdown bar ===== */
+  .countdown-bar {
+    height: 6px;
+    background: var(--ink-faint);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .countdown-bar .fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.1s linear;
+  }
+
+  /* ===== List divider ===== */
+  .hr {
+    border: 0;
+    border-top: 1px solid var(--ink-faint);
+    margin: 14px 0;
+  }
+  .hr-dashed {
+    border: 0;
+    border-top: 1px dashed var(--ink-faint);
+    margin: 12px 0;
+  }
+
+  /* ===== Settings list ===== */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ink-faint);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .body { flex: 1; }
+  .setting-row .body .nm { font-weight: 600; font-size: 14px; }
+  .setting-row .body .desc { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .setting-row .val {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .setting-row .chev::after {
+    content: "›";
+    color: var(--ink-mute);
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  /* ===== Empty state ===== */
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-mute);
+  }
+  .empty .ico { font-size: 36px; opacity: 0.5; margin-bottom: 10px; }
+  .empty .msg { font-size: 13px; }
+
+  /* ===== History row ===== */
+  .hist-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--ink-faint);
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-day {
+    width: 44px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .hist-day .d { font-size: 18px; font-weight: 700; line-height: 1; }
+  .hist-day .m { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .hist-row .body { flex: 1; min-width: 0; }
+  .hist-row .body .summ { font-size: 13px; font-weight: 600; }
+  .hist-row .body .meta { font-size: 11px; color: var(--ink-soft); }
+  .hist-row .rating { font-size: 18px; }
+
+  /* ===== Confetti ===== */
+  .confetti {
+    position: absolute;
+    width: 10px; height: 14px;
+    background: var(--accent);
+    opacity: 0;
+    animation: confettiFall 1.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 50;
+  }
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(-40px) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(400px) rotate(720deg); }
+  }
+
+  /* ===== Util ===== */
+  .flex { display: flex; }
+  .col { display: flex; flex-direction: column; }
+  .gap-4 { gap: 4px; }
+  .gap-6 { gap: 6px; }
+  .gap-8 { gap: 8px; }
+  .gap-10 { gap: 10px; }
+  .gap-12 { gap: 12px; }
+  .gap-16 { gap: 16px; }
+  .between { justify-content: space-between; }
+  .center-y { align-items: center; }
+  .mt-auto { margin-top: auto; }
+  .mt-4 { margin-top: 4px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .grow { flex: 1; }
+  .small { font-size: 12px; }
+  .tiny { font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="desktop-frame">
+  <div class="desktop-label">
+    <span class="stamp">live demo</span>
+    <br/>
+    TimBot prototype — click "✦" anytime to switch users, simulate the geofence push, or jump between states.
+  </div>
+  <div class="phone-frame">
+    <div id="app"></div>
+  </div>
+  <div class="desktop-label" style="text-align: left;">
+    Multi-user → state lives in <b>your browser only</b>. Anyone else opening the link gets their own clean session.
+  </div>
+</div>
+
+<button id="demo-fab" aria-label="Demo controls"></button>
+<div class="demo-backdrop" id="demo-backdrop"></div>
+<aside id="demo-panel" aria-label="Demo control panel"></aside>
+<div id="toast-rail"></div>
+
+<script>
+/* =================================================================================
+   TIMBOT — Functional PWA prototype
+   Frontend-only. State persists per-browser via localStorage. Multiple "user
+   profiles" can be created and switched within one browser for stakeholder demos.
+   ================================================================================ */
+
+(function () {
+  'use strict';
+
+  // ----------------------------------------------------------------
+  // Constants
+  // ----------------------------------------------------------------
+  const STORAGE_KEY = 'timbot.state.v1';
+  const CHANNEL_NAME = 'timbot.multiuser.v1';
+  const AVATAR_COLORS = [
+    '#c25a30', '#5b7a8f', '#7a5b8f', '#8f7a5b',
+    '#4d7a48', '#a8503f', '#3f6a7a', '#7a3f6a',
+    '#5b8f7a', '#8f5b5b'
+  ];
+
+  const DRINKS = [
+    { id: 'coffee',     name: 'Coffee',       emoji: '☕' },
+    { id: 'latte',      name: 'Latte',        emoji: '🥛' },
+    { id: 'tea',        name: 'Steeped Tea',  emoji: '🍵' },
+    { id: 'iced',       name: 'Iced Coffee',  emoji: '🧊' },
+    { id: 'capp',       name: 'Cappuccino',   emoji: '☕' },
+    { id: 'hotchoc',    name: 'Hot Chocolate', emoji: '🍫' }
+  ];
+  const SIZES = ['S', 'M', 'L', 'XL'];
+
+  const FOODS = [
+    { id: 'wrap',     name: 'Breakfast wrap',  emoji: '🌯', price: 4.99 },
+    { id: 'donut',    name: 'Filled donut',    emoji: '🍩', price: 1.99 },
+    { id: 'bagel',    name: 'Bagel + cream',   emoji: '🥯', price: 3.49 },
+    { id: 'muffin',   name: 'Muffin',          emoji: '🧁', price: 2.49 },
+    { id: 'sandwich', name: 'Sandwich',        emoji: '🥪', price: 5.49 },
+    { id: 'hashbrown',name: 'Hash brown',      emoji: '🥔', price: 1.49 }
+  ];
+
+  const PLANS = [
+    { id: '3', mornings: 3, weekly: 14, perMorning: 4.67, save: 3, label: 'Light routine · WFH-friendly' },
+    { id: '4', mornings: 4, weekly: 18, perMorning: 4.50, save: 5, label: 'Hybrid commuter sweet spot', popular: true },
+    { id: '5', mornings: 5, weekly: 21, perMorning: 4.20, save: 8, label: 'Full commuter — best value' }
+  ];
+
+  const STORES = [
+    'Union Station, Toronto',
+    'King & Bay',
+    'Yonge & Bloor',
+    'Bay & Adelaide',
+    'Spadina & Front'
+  ];
+
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const DAY_NAMES_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const STATE_LABELS = {
+    scheduled: 'Scheduled',
+    preparing: 'Preparing',
+    ready: 'Ready for pickup',
+    picked: 'Picked up',
+    skipped: 'Skipped today'
+  };
+
+  // ----------------------------------------------------------------
+  // Store
+  // ----------------------------------------------------------------
+  let state = {
+    users: {},
+    currentUserId: null,
+    seenWelcome: false
+  };
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        state = Object.assign(state, parsed);
+      }
+    } catch (e) { /* corrupt — start fresh */ }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (channel) channel.postMessage({ type: 'state-update', from: clientId });
+    } catch (e) {}
+  }
+
+  function currentUser() {
+    return state.currentUserId ? state.users[state.currentUserId] : null;
+  }
+
+  function newUserId() {
+    return 'u_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  }
+
+  function pickAvatarColor() {
+    const used = Object.values(state.users).map(u => u.color);
+    const open = AVATAR_COLORS.filter(c => !used.includes(c));
+    return (open.length ? open : AVATAR_COLORS)[Math.floor(Math.random() * (open.length || AVATAR_COLORS.length))];
+  }
+
+  function createUser(name) {
+    const id = newUserId();
+    const initials = (name.trim().split(/\s+/).map(s => s[0]).join('').slice(0, 2) || 'U').toUpperCase();
+    state.users[id] = {
+      id,
+      name: name.trim(),
+      initials,
+      color: pickAvatarColor(),
+      createdAt: Date.now(),
+      onboarded: false,
+      usual: null,
+      schedule: null,
+      plan: null,
+      store: STORES[0],
+      currentOrder: null,
+      history: [],
+      ratings: 0
+    };
+    state.currentUserId = id;
+    saveState();
+    return state.users[id];
+  }
+
+  function deleteUser(id) {
+    delete state.users[id];
+    if (state.currentUserId === id) {
+      const remaining = Object.keys(state.users);
+      state.currentUserId = remaining[0] || null;
+    }
+    saveState();
+  }
+
+  function switchUser(id) {
+    if (state.users[id]) {
+      state.currentUserId = id;
+      saveState();
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // Multi-tab sync
+  // ----------------------------------------------------------------
+  const clientId = Math.random().toString(36).slice(2, 10);
+  let channel = null;
+  if ('BroadcastChannel' in window) {
+    try {
+      channel = new BroadcastChannel(CHANNEL_NAME);
+      channel.onmessage = (e) => {
+        if (e.data && e.data.from !== clientId && e.data.type === 'state-update') {
+          loadState();
+          render();
+          renderDemoPanel();
+        }
+      };
+    } catch (e) {}
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) {
+      loadState();
+      render();
+      renderDemoPanel();
+    }
+  });
+
+  // ----------------------------------------------------------------
+  // Router
+  // ----------------------------------------------------------------
+  let currentRoute = { view: 'welcome', params: {} };
+  let prevRoute = null;
+  let transition = 'fade';
+
+  function navigate(view, params = {}, opts = {}) {
+    prevRoute = currentRoute;
+    currentRoute = { view, params };
+    transition = opts.transition || 'right';
+    render();
+  }
+
+  function navigateBack(fallback = 'home') {
+    if (prevRoute) {
+      transition = 'left';
+      const tmp = currentRoute;
+      currentRoute = prevRoute;
+      prevRoute = tmp;
+      render();
+    } else {
+      navigate(fallback);
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // Render
+  // ----------------------------------------------------------------
+  const app = document.getElementById('app');
+
+  function render() {
+    const view = views[currentRoute.view];
+    if (!view) {
+      app.innerHTML = '<div class="view pad"><h2>Lost…</h2><button class="btn primary" onclick="window.location.reload()">Reload</button></div>';
+      return;
+    }
+    const el = view(currentRoute.params);
+    el.classList.add(
+      transition === 'left' ? 'view-enter-back' :
+      transition === 'up'   ? 'view-enter-up'   :
+      transition === 'fade' ? 'view-enter-fade' :
+      'view-enter'
+    );
+    app.innerHTML = '';
+    app.appendChild(el);
+    transition = 'right';
+  }
+
+  // ----------------------------------------------------------------
+  // Helpers
+  // ----------------------------------------------------------------
+  function h(tag, props, ...children) {
+    const el = document.createElement(tag);
+    if (props) {
+      for (const k in props) {
+        if (k === 'class') el.className = props[k];
+        else if (k === 'style' && typeof props[k] === 'object') {
+          Object.assign(el.style, props[k]);
+        }
+        else if (k === 'html') el.innerHTML = props[k];
+        else if (k.startsWith('on') && typeof props[k] === 'function') {
+          el.addEventListener(k.slice(2).toLowerCase(), props[k]);
+        }
+        else if (k === 'data' && typeof props[k] === 'object') {
+          for (const d in props[k]) el.dataset[d] = props[k][d];
+        }
+        else if (props[k] !== false && props[k] != null) el.setAttribute(k, props[k]);
+      }
+    }
+    for (const c of children.flat()) {
+      if (c == null || c === false) continue;
+      el.appendChild(typeof c === 'string' || typeof c === 'number'
+        ? document.createTextNode(c) : c);
+    }
+    return el;
+  }
+
+  function fmtTime(d = new Date()) {
+    let hh = d.getHours();
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ap = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12 || 12;
+    return `${hh}:${mm} ${ap}`;
+  }
+
+  function fmtTimeShort(d = new Date()) {
+    let hh = d.getHours();
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    hh = hh % 12 || 12;
+    return `${hh}:${mm}`;
+  }
+
+  function fmtDayDate(d = new Date()) {
+    return `${DAY_NAMES_LONG[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
+  }
+
+  function fmtOrderSummary(usual) {
+    if (!usual) return '';
+    const drink = `${usual.size} ${DRINKS.find(d => d.id === usual.drink)?.name || 'Drink'}`;
+    const food = usual.food && usual.food.length
+      ? ', ' + usual.food.map(f => FOODS.find(x => x.id === f)?.name.toLowerCase()).join(' + ')
+      : '';
+    return drink + food;
+  }
+
+  function statusBar(extra = '') {
+    return h('div', { class: 'statusbar' },
+      h('span', null, fmtTimeShort()),
+      h('span', { class: 'right' }, extra || '●●● ▮')
+    );
+  }
+
+  function topBar(opts = {}) {
+    const tb = h('div', { class: 'topbar' });
+    if (opts.back) tb.appendChild(h('button', { class: 'iconbtn back', onclick: opts.back, 'aria-label': 'Back' }));
+    else if (opts.close) tb.appendChild(h('button', { class: 'iconbtn close', onclick: opts.close, 'aria-label': 'Close' }));
+    else tb.appendChild(h('div', { style: { width: '38px' } }));
+    tb.appendChild(h('div', { class: 'title' }, opts.title || ''));
+    if (opts.action) tb.appendChild(opts.action);
+    else tb.appendChild(h('div', { style: { width: '38px' } }));
+    return tb;
+  }
+
+  function progress(step, total = 3) {
+    const p = h('div', { class: 'progress', style: { gridTemplateColumns: `repeat(${total}, 1fr)` } });
+    for (let i = 0; i < total; i++) p.appendChild(h('div', { class: 'seg' + (i < step ? ' on' : '') }));
+    return p;
+  }
+
+  function toast(msg, ico) {
+    const rail = document.getElementById('toast-rail');
+    const t = h('div', { class: 'toast' },
+      ico ? h('span', { class: 'ico' }, ico) : null,
+      h('span', null, msg)
+    );
+    rail.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('in'));
+    setTimeout(() => {
+      t.classList.remove('in');
+      setTimeout(() => t.remove(), 320);
+    }, 2400);
+  }
+
+  // ----------------------------------------------------------------
+  // Order state machine
+  // ----------------------------------------------------------------
+  function generateOrderNum() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return letters[Math.floor(Math.random() * letters.length)]
+      + String(Math.floor(Math.random() * 99) + 10);
+  }
+
+  function startTodayOrder(state_ = 'scheduled') {
+    const u = currentUser();
+    if (!u) return;
+    u.currentOrder = {
+      state: state_,
+      orderNum: generateOrderNum(),
+      placedAt: Date.now(),
+      pickupTime: u.schedule?.time || '8:15 AM',
+      store: u.store || STORES[0],
+      items: JSON.parse(JSON.stringify(u.usual)),
+      rated: null
+    };
+    saveState();
+  }
+
+  function transitionOrder(toState) {
+    const u = currentUser();
+    if (!u || !u.currentOrder) {
+      startTodayOrder(toState);
+      return;
+    }
+    u.currentOrder.state = toState;
+    if (toState === 'picked' || toState === 'skipped') {
+      u.currentOrder.completedAt = Date.now();
+    }
+    saveState();
+  }
+
+  function archiveCurrentOrder(rating) {
+    const u = currentUser();
+    if (!u || !u.currentOrder) return;
+    const entry = Object.assign({}, u.currentOrder, {
+      rating: rating || u.currentOrder.rated,
+      date: Date.now()
+    });
+    u.history.unshift(entry);
+    if (entry.rating) u.ratings += 1;
+    u.currentOrder = null;
+    saveState();
+  }
+
+  // ----------------------------------------------------------------
+  // VIEWS
+  // ----------------------------------------------------------------
+  const views = {};
+
+  // ---- WELCOME ----
+  views.welcome = () => {
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+
+    const content = h('div', { class: 'view-scroll pad', style: { display: 'flex', flexDirection: 'column', gap: '14px' } });
+
+    content.appendChild(h('div', { style: { marginTop: '20px' }, class: 'eyebrow' }, 'Introducing TimBot'));
+
+    const hero = h('div', {
+      style: {
+        height: '220px',
+        borderRadius: '20px',
+        background: 'linear-gradient(155deg, #fef0d8 0%, #f4c89b 50%, #c25a30 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        marginBottom: '8px'
+      }
+    });
+    hero.innerHTML = `
+      <div style="font-size: 90px; line-height: 1; transform: rotate(-8deg); filter: drop-shadow(0 4px 12px rgba(42,36,29,0.3));">☕</div>
+      <div style="position: absolute; top: 20px; right: 24px; opacity: 0.4; font-family: 'Caveat', cursive; color: #fff; font-size: 24px; transform: rotate(8deg);">~steam~</div>
+      <div style="position: absolute; bottom: 14px; left: 14px; background: rgba(255,255,255,0.85); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--accent); text-transform: uppercase;">● Beta · Pilot</div>
+    `;
+    content.appendChild(hero);
+
+    content.appendChild(h('h2', { class: 'serif lg' }, 'Skip the line.', h('br'), 'Keep the ritual.'));
+    content.appendChild(h('p', { class: 'sub' },
+      "Pre-pay your week. Your order pulls itself when you're 10 minutes out. Walk in, walk out."
+    ));
+
+    // returning users
+    const users = Object.values(state.users);
+    if (users.length > 0) {
+      const usersCard = h('div', { class: 'card soft mt-12' });
+      usersCard.appendChild(h('div', { class: 'eyebrow mute', style: { marginBottom: '10px' } }, 'Continue as'));
+      users.sort((a, b) => b.createdAt - a.createdAt).slice(0, 4).forEach(u => {
+        const row = h('div', {
+          class: 'demo-user-row',
+          style: { background: 'transparent', padding: '8px 4px', marginBottom: '0' },
+          onclick: () => {
+            switchUser(u.id);
+            navigate(u.onboarded ? 'home' : 'onboard1', {}, { transition: 'right' });
+          }
+        });
+        row.appendChild(h('div', { class: 'avatar', style: { background: u.color } }, u.initials));
+        row.appendChild(h('div', { class: 'info' },
+          h('div', { class: 'nm' }, u.name),
+          h('div', { class: 'meta' }, u.onboarded ? `${u.plan || '?'} mornings/wk · ${u.store?.split(',')[0] || ''}` : 'Setup in progress…')
+        ));
+        row.appendChild(h('span', { style: { color: 'var(--accent)', fontSize: '20px' } }, '›'));
+        usersCard.appendChild(row);
+      });
+      content.appendChild(usersCard);
+    }
+
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', {
+      class: 'btn primary',
+      onclick: () => navigate('signup', {}, { transition: 'right' })
+    }, users.length ? 'Add another profile' : 'Set up TimBot →'));
+    if (!users.length) {
+      footer.appendChild(h('button', { class: 'link', onclick: () => toast('Saved for later 👋') }, "I'll do it later"));
+    }
+    view.appendChild(footer);
+
+    return view;
+  };
+
+  // ---- SIGNUP ----
+  views.signup = () => {
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('welcome', {}, { transition: 'left' }), title: 'Create profile' }));
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+    content.appendChild(h('h1', { class: 'title' }, 'What should we call you?'));
+    content.appendChild(h('p', { class: 'sub' }, "This profile is private to your browser. It's how you'll see your usual on the dashboard."));
+
+    const field = h('div', { class: 'field mt-12' });
+    field.appendChild(h('label', { class: 'input-label' }, 'Your name'));
+    const input = h('input', {
+      class: 'input',
+      type: 'text',
+      autocomplete: 'given-name',
+      placeholder: 'e.g. Sandra',
+      maxlength: 40
+    });
+    field.appendChild(input);
+    content.appendChild(field);
+
+    const errBox = h('div', { class: 'small', style: { color: 'var(--accent)', minHeight: '20px' } });
+    content.appendChild(errBox);
+
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'footer-cta' });
+    const submit = () => {
+      const name = input.value.trim();
+      if (name.length < 2) {
+        errBox.textContent = 'Please enter at least 2 characters.';
+        input.focus();
+        return;
+      }
+      createUser(name);
+      toast(`Hi ${name.split(' ')[0]} 👋`);
+      navigate('onboard1', {}, { transition: 'right' });
+    };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    footer.appendChild(h('button', { class: 'btn primary', onclick: submit }, 'Continue →'));
+    view.appendChild(footer);
+
+    setTimeout(() => input.focus(), 80);
+    return view;
+  };
+
+  // ---- ONBOARD STEP 1 — BUILD USUAL ----
+  views.onboard1 = () => {
+    const u = currentUser();
+    if (!u) { navigate('welcome'); return h('div'); }
+
+    if (!u.usual) {
+      u.usual = { drink: 'coffee', size: 'L', cream: 2, sugar: 2, food: [] };
+    }
+    const draft = u.usual;
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('welcome', {}, { transition: 'left' }), title: 'Step 1 of 3' }));
+    view.appendChild(progress(1));
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+
+    content.appendChild(h('h1', { class: 'title' }, 'Build your usual'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Pick once, repeat forever. We remember everything.'));
+
+    // Drink section
+    const drinkSec = h('div', { class: 'col gap-8' });
+    drinkSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Drink'));
+    const drinkRow = h('div', { class: 'chip-row' });
+    DRINKS.forEach(d => {
+      const c = h('button', {
+        class: 'chip' + (draft.drink === d.id ? ' on' : ''),
+        onclick: () => { draft.drink = d.id; rerender(); }
+      }, `${d.emoji} ${d.name}`);
+      drinkRow.appendChild(c);
+    });
+    drinkSec.appendChild(drinkRow);
+
+    // Size
+    const sizeRow = h('div', { class: 'chip-row', style: { marginTop: '4px' } });
+    SIZES.forEach(s => {
+      sizeRow.appendChild(h('button', {
+        class: 'chip sm' + (draft.size === s ? ' on' : ''),
+        onclick: () => { draft.size = s; rerender(); }
+      }, s));
+    });
+    drinkSec.appendChild(sizeRow);
+
+    // Cream / Sugar
+    const csRow = h('div', { class: 'flex gap-8', style: { marginTop: '4px' } });
+    const stepper = (label, key) => {
+      const val = draft[key];
+      const wrap = h('div', { class: 'card soft', style: { flex: '1', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' } });
+      wrap.appendChild(h('div', { style: { fontSize: '12px', fontWeight: '600', color: 'var(--ink-soft)' } }, label));
+      const stp = h('div', { class: 'flex center-y gap-6' });
+      stp.appendChild(h('button', {
+        class: 'iconbtn',
+        style: { width: '26px', height: '26px', fontSize: '14px', background: 'var(--paper-card)' },
+        onclick: () => { draft[key] = Math.max(0, val - 1); rerender(); }
+      }, '−'));
+      stp.appendChild(h('span', { style: { fontWeight: '700', fontSize: '15px', minWidth: '14px', textAlign: 'center' } }, String(val)));
+      stp.appendChild(h('button', {
+        class: 'iconbtn',
+        style: { width: '26px', height: '26px', fontSize: '14px', background: 'var(--paper-card)' },
+        onclick: () => { draft[key] = Math.min(5, val + 1); rerender(); }
+      }, '+'));
+      wrap.appendChild(stp);
+      return wrap;
+    };
+    csRow.appendChild(stepper('Cream', 'cream'));
+    csRow.appendChild(stepper('Sugar', 'sugar'));
+    drinkSec.appendChild(csRow);
+
+    content.appendChild(drinkSec);
+
+    // Food
+    const foodSec = h('div', { class: 'col gap-8' });
+    foodSec.appendChild(h('div', { class: 'flex between center-y' },
+      h('div', { class: 'eyebrow mute' }, 'Food (pick any)'),
+      h('div', { class: 'small mute' }, draft.food.length ? `${draft.food.length} added` : 'optional')
+    ));
+    const tg = h('div', { class: 'tile-grid' });
+    FOODS.forEach(f => {
+      const selected = draft.food.includes(f.id);
+      const tile = h('div', {
+        class: 'tile' + (selected ? ' selected' : ''),
+        onclick: () => {
+          if (selected) draft.food = draft.food.filter(x => x !== f.id);
+          else draft.food.push(f.id);
+          rerender();
+        }
+      },
+        h('div', { class: 'emoji' }, f.emoji),
+        h('div', { class: 'name' }, f.name),
+        h('div', { class: 'price' }, '$' + f.price.toFixed(2)),
+        h('div', { class: 'check' }, '✓')
+      );
+      tg.appendChild(tile);
+    });
+    foodSec.appendChild(tg);
+    content.appendChild(foodSec);
+
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', {
+      class: 'btn primary',
+      onclick: () => {
+        u.usual = draft;
+        saveState();
+        navigate('onboard2', {}, { transition: 'right' });
+      }
+    }, 'Save my usual →'));
+    view.appendChild(footer);
+
+    function rerender() {
+      const newView = views.onboard1();
+      newView.classList.add('view-enter-fade');
+      app.replaceChild(newView, view);
+    }
+
+    return view;
+  };
+
+  // ---- ONBOARD STEP 2 — SCHEDULE ----
+  views.onboard2 = () => {
+    const u = currentUser();
+    if (!u || !u.usual) { navigate('onboard1'); return h('div'); }
+
+    if (!u.schedule) {
+      u.schedule = {
+        days: [false, true, true, true, true, true, false],
+        time: '08:15',
+        perDay: false,
+        perDayTimes: ['08:15', '08:15', '08:15', '08:15', '08:15', '08:15', '08:15']
+      };
+    }
+    const draft = u.schedule;
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('onboard1', {}, { transition: 'left' }), title: 'Step 2 of 3' }));
+    view.appendChild(progress(2));
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+
+    content.appendChild(h('h1', { class: 'title' }, 'Pick your week'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Which mornings should TimBot run?'));
+
+    // Week grid
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+
+    const wg = h('div', { class: 'weekgrid mt-8' });
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const isToday = d.toDateString() === today.toDateString();
+      const c = h('div', {
+        class: 'day' + (draft.days[i] ? ' on' : '') + (isToday ? ' today' : ''),
+        onclick: () => { draft.days[i] = !draft.days[i]; rerender(); }
+      },
+        h('span', null, DAY_NAMES[i][0]),
+        h('span', { class: 'd' }, String(d.getDate()))
+      );
+      wg.appendChild(c);
+    }
+    content.appendChild(wg);
+
+    // Default time + toggle
+    const timeCard = h('div', { class: 'card soft col gap-10 mt-8' });
+    const headRow = h('div', { class: 'flex between center-y gap-12' },
+      h('div', { class: 'col gap-4', style: { flex: '1' } },
+        h('div', { style: { fontWeight: '700', fontSize: '14px' } }, 'Default pickup'),
+        h('div', { class: 'small mute' }, 'Applies to all selected days')
+      ),
+      h('div', { class: 'time-pill', style: { padding: '8px 12px', border: 'none', background: 'var(--paper-card)' } },
+        h('input', {
+          type: 'time',
+          value: draft.time,
+          onchange: (e) => { draft.time = e.target.value; rerender(); }
+        })
+      )
+    );
+    timeCard.appendChild(headRow);
+    timeCard.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '0' } }));
+    const toggleRow = h('div', { class: 'flex between center-y' },
+      h('div', { class: 'small' }, 'Set a different time per day'),
+      h('div', { class: 'toggle' + (draft.perDay ? ' on' : ''), onclick: () => { draft.perDay = !draft.perDay; rerender(); } })
+    );
+    timeCard.appendChild(toggleRow);
+    content.appendChild(timeCard);
+
+    // Per-day rows
+    if (draft.perDay) {
+      const perDay = h('div', { class: 'col gap-6 mt-8' });
+      for (let i = 0; i < 7; i++) {
+        if (!draft.days[i]) continue;
+        const row = h('div', { class: 'time-pill' },
+          h('span', { class: 'label' }, DAY_NAMES_LONG[i]),
+          h('input', {
+            type: 'time',
+            value: draft.perDayTimes[i],
+            onchange: (e) => { draft.perDayTimes[i] = e.target.value; }
+          })
+        );
+        perDay.appendChild(row);
+      }
+      content.appendChild(perDay);
+    }
+
+    // Store
+    const storeSec = h('div', { class: 'col gap-6 mt-8' });
+    storeSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Pickup location'));
+    const storeSel = h('select', {
+      class: 'input',
+      onchange: (e) => { u.store = e.target.value; saveState(); }
+    });
+    STORES.forEach(s => {
+      const o = h('option', { value: s }, s);
+      if (u.store === s) o.setAttribute('selected', '');
+      storeSel.appendChild(o);
+    });
+    storeSec.appendChild(storeSel);
+    content.appendChild(storeSec);
+
+    view.appendChild(content);
+
+    const dayCount = draft.days.filter(Boolean).length;
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', {
+      class: 'btn primary',
+      disabled: dayCount === 0,
+      onclick: () => {
+        u.schedule = draft;
+        saveState();
+        navigate('onboard3', {}, { transition: 'right' });
+      }
+    }, dayCount === 0 ? 'Pick at least one day' : `Continue → ${dayCount} morning${dayCount > 1 ? 's' : ''}/week`));
+    view.appendChild(footer);
+
+    function rerender() {
+      const newView = views.onboard2();
+      newView.classList.add('view-enter-fade');
+      app.replaceChild(newView, view);
+    }
+
+    return view;
+  };
+
+  // ---- ONBOARD STEP 3 — PLAN ----
+  views.onboard3 = () => {
+    const u = currentUser();
+    if (!u || !u.usual || !u.schedule) { navigate('onboard1'); return h('div'); }
+
+    const dayCount = u.schedule.days.filter(Boolean).length;
+    const suggested = PLANS.find(p => p.mornings >= dayCount) || PLANS[2];
+    if (!u.plan) u.plan = suggested.id;
+    let selected = u.plan;
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('onboard2', {}, { transition: 'left' }), title: 'Step 3 of 3' }));
+    view.appendChild(progress(3));
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+    content.appendChild(h('h1', { class: 'title' }, 'Lock in your week'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Pre-pay, save, no surprises. Cancel or pause anytime.'));
+
+    const list = h('div', { class: 'col gap-10' });
+    PLANS.forEach(p => {
+      const tier = h('div', {
+        class: 'tier' + (selected === p.id ? ' selected' : ''),
+        onclick: () => { u.plan = p.id; selected = p.id; rerender(); }
+      });
+      if (p.popular) {
+        tier.appendChild(h('div', { class: 'ribbon' }, h('span', { class: 'badge' }, 'Most picked')));
+      } else if (p.mornings === 5) {
+        tier.appendChild(h('div', { class: 'ribbon' }, h('span', { class: 'badge outline' }, 'Best value')));
+      }
+      tier.appendChild(h('div', { class: 'num' }, String(p.mornings)));
+      tier.appendChild(h('div', { class: 'body' },
+        h('div', { class: 't1' }, `${p.mornings} mornings / week`),
+        h('div', { class: 't2' }, p.label),
+        h('div', { class: 'save' }, `Save $${p.save} vs. à la carte`)
+      ));
+      tier.appendChild(h('div', { class: 'price' },
+        h('div', { class: 'p1' }, '$' + p.weekly, h('small', null, '/wk')),
+        h('div', { class: 'p2' }, '$' + p.perMorning.toFixed(2) + ' / morning')
+      ));
+      list.appendChild(tier);
+    });
+    content.appendChild(list);
+
+    if (dayCount > 0) {
+      content.appendChild(h('div', { class: 'small mute center mt-8' },
+        `You picked ${dayCount} morning${dayCount > 1 ? 's' : ''}; we recommend the ${suggested.mornings}-morning plan.`
+      ));
+    }
+
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', {
+      class: 'btn primary',
+      onclick: () => {
+        u.plan = selected;
+        u.onboarded = true;
+        // Auto-create today's order so the dashboard isn't empty
+        startTodayOrder('scheduled');
+        saveState();
+        navigate('onboardDone', {}, { transition: 'up' });
+      }
+    }, 'Start TimBot — $' + PLANS.find(p => p.id === selected).weekly + '/wk'));
+    footer.appendChild(h('button', { class: 'link', onclick: () => toast('Pause or cancel from Settings anytime.') }, 'Cancel or pause anytime'));
+    view.appendChild(footer);
+
+    function rerender() {
+      const newView = views.onboard3();
+      newView.classList.add('view-enter-fade');
+      app.replaceChild(newView, view);
+    }
+
+    return view;
+  };
+
+  // ---- ONBOARD DONE (celebration screen) ----
+  views.onboardDone = () => {
+    const u = currentUser();
+    if (!u) { navigate('welcome'); return h('div'); }
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+
+    const content = h('div', { class: 'view-scroll pad col gap-16 center', style: { justifyContent: 'center', alignItems: 'center', padding: '40px 24px' } });
+
+    const burst = h('div', { style: { fontSize: '90px', marginBottom: '10px' }, class: 'pop-in' }, '🎉');
+    content.appendChild(burst);
+
+    content.appendChild(h('h1', { class: 'serif lg center', style: { textAlign: 'center' } }, "You're all set,", h('br'), u.name.split(' ')[0] + '.'));
+    content.appendChild(h('p', { class: 'sub center' }, "TimBot will run tomorrow morning. Want to see what the day-of looks like? Try a live preview now."));
+
+    const summary = h('div', { class: 'card mt-16', style: { width: '100%' } },
+      h('div', { class: 'flex between center-y' },
+        h('span', { class: 'eyebrow mute' }, 'Your routine'),
+        h('span', { class: 'badge dark' }, u.plan + ' MORNINGS/WK')
+      ),
+      h('div', { class: 'mt-8 small' }, fmtOrderSummary(u.usual)),
+      h('div', { class: 'small mute mt-4' }, `${u.schedule.days.filter(Boolean).length} days · ${formatTime(u.schedule.time)} · ${(u.store || '').split(',')[0]}`)
+    );
+    content.appendChild(summary);
+
+    // confetti
+    setTimeout(() => {
+      for (let i = 0; i < 26; i++) {
+        const c = h('div', {
+          class: 'confetti',
+          style: {
+            left: Math.random() * 100 + '%',
+            top: '20%',
+            background: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+            animationDelay: (Math.random() * 0.4) + 's',
+            transform: `rotate(${Math.random() * 360}deg)`
+          }
+        });
+        view.appendChild(c);
+        setTimeout(() => c.remove(), 2200);
+      }
+    }, 200);
+
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', {
+      class: 'btn primary',
+      onclick: () => navigate('home', {}, { transition: 'up' })
+    }, 'Go to my dashboard →'));
+    footer.appendChild(h('button', { class: 'link', onclick: () => {
+      transitionOrder('preparing');
+      navigate('lock', {}, { transition: 'fade' });
+    } }, 'Preview the morning push →'));
+    view.appendChild(footer);
+
+    return view;
+  };
+
+  function formatTime(t24) {
+    if (!t24) return '';
+    const [h, m] = t24.split(':').map(Number);
+    const ap = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2,'0')} ${ap}`;
+  }
+
+  // ---- HOME (day-of dashboard) ----
+  views.home = () => {
+    const u = currentUser();
+    if (!u) { navigate('welcome'); return h('div'); }
+    if (!u.onboarded) { navigate('onboard1'); return h('div'); }
+    if (!u.currentOrder) startTodayOrder('scheduled');
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+
+    // header
+    content.appendChild(h('div', { class: 'flex between center-y' },
+      h('div', null,
+        h('div', { class: 'eyebrow mute' }, fmtDayDate()),
+        h('h2', { class: 'title', style: { fontSize: '24px', margin: '4px 0 0' } }, `Good morning, ${u.name.split(' ')[0]}`)
+      ),
+      h('button', {
+        class: 'avatar',
+        style: { background: u.color },
+        onclick: () => navigate('settings', {}, { transition: 'right' })
+      }, u.initials)
+    ));
+
+    // today card
+    const order = u.currentOrder;
+    content.appendChild(renderTodayCard(order, u));
+
+    // weekly
+    const weekTitle = h('div', { class: 'flex between center-y mt-8' },
+      h('div', { class: 'eyebrow mute' }, 'This week'),
+      h('button', { class: 'link', style: { padding: '0', fontSize: '12px' }, onclick: () => navigate('history', {}, { transition: 'right' }) }, 'History →')
+    );
+    content.appendChild(weekTitle);
+
+    const today = new Date();
+    const wgrid = h('div', { class: 'flex gap-6' });
+    for (let i = 0; i < 7; i++) {
+      if (!u.schedule.days[i]) continue;
+      const isToday = i === today.getDay();
+      const isPast = i < today.getDay();
+      let cls = 'day';
+      let inner;
+      if (isToday) {
+        cls += ' today on';
+        const stateGlyph = {
+          scheduled: '○', preparing: '◐', ready: '●', picked: '✓', skipped: '–'
+        }[order.state] || '●';
+        inner = stateGlyph;
+      } else if (isPast) {
+        cls += ' done';
+        inner = '✓';
+      } else {
+        inner = '·';
+      }
+      const cell = h('div', { class: cls, style: { flex: '1', aspectRatio: '1 / 1.2' } },
+        h('span', null, DAY_NAMES[i][0]),
+        h('span', { class: 'd' }, inner)
+      );
+      wgrid.appendChild(cell);
+    }
+    content.appendChild(wgrid);
+
+    // shortcuts
+    content.appendChild(h('div', { class: 'eyebrow mute mt-8' }, 'Shortcuts'));
+    const shortcuts = h('div', { class: 'col gap-8' });
+    shortcuts.appendChild(h('div', { class: 'card card-press flex between center-y', onclick: () => navigate('history', {}, { transition: 'right' }) },
+      h('div', { class: 'flex center-y gap-12' },
+        h('div', { class: 'item-icon' }, '📅'),
+        h('div', null,
+          h('div', { style: { fontWeight: '600', fontSize: '14px' } }, 'Order history'),
+          h('div', { class: 'small mute' }, `${u.history.length} morning${u.history.length === 1 ? '' : 's'} so far`)
+        )
+      ),
+      h('span', { style: { color: 'var(--ink-mute)', fontSize: '20px' } }, '›')
+    ));
+    shortcuts.appendChild(h('div', { class: 'card card-press flex between center-y', onclick: () => navigate('settings', {}, { transition: 'right' }) },
+      h('div', { class: 'flex center-y gap-12' },
+        h('div', { class: 'item-icon' }, '⚙️'),
+        h('div', null,
+          h('div', { style: { fontWeight: '600', fontSize: '14px' } }, 'Manage TimBot'),
+          h('div', { class: 'small mute' }, 'Plan · schedule · usual · pause')
+        )
+      ),
+      h('span', { style: { color: 'var(--ink-mute)', fontSize: '20px' } }, '›')
+    ));
+    content.appendChild(shortcuts);
+
+    content.appendChild(h('div', { style: { height: '20px' } }));
+
+    view.appendChild(content);
+    return view;
+  };
+
+  function renderTodayCard(order, u) {
+    const card = h('div', { class: 'card lift', style: { padding: '18px' } });
+
+    const stateLabel = STATE_LABELS[order.state];
+    const stateClass = `state-pill ${order.state}`;
+
+    card.appendChild(h('div', { class: 'flex between center-y' },
+      h('span', { class: stateClass },
+        h('span', { class: 'dot' }), stateLabel
+      ),
+      h('span', { class: 'tiny mute' }, `${formatTime(u.schedule.time)} · ${u.store?.split(',')[0]}`)
+    ));
+
+    // Hero copy varies by state
+    const heroByState = {
+      scheduled: {
+        title: `On for ${formatTime(u.schedule.time)}.`,
+        sub: `We'll trigger 10 minutes before pickup. You'll get a push to swap, then we order.`
+      },
+      preparing: {
+        title: `You're 10 min out.`,
+        sub: `We pulled your usual just now. Ready when you walk in.`
+      },
+      ready: {
+        title: `Ready for you, ${u.name.split(' ')[0]}.`,
+        sub: `Order #${order.orderNum}. Walk past the line — show the QR at the counter.`
+      },
+      picked: {
+        title: `Enjoy your morning.`,
+        sub: `Picked up at ${fmtTime(new Date(order.completedAt || Date.now()))}. Rate below to help us tune your usual.`
+      },
+      skipped: {
+        title: `Skipped today.`,
+        sub: `No charge today. TimBot will run as usual tomorrow.`
+      }
+    };
+    const hero = heroByState[order.state];
+
+    if (order.state === 'ready' || order.state === 'picked') {
+      card.appendChild(h('h3', { class: 'serif', style: { fontSize: '28px', marginTop: '10px' } }, hero.title));
+    } else {
+      card.appendChild(h('h3', { class: 'serif', style: { fontSize: '24px', marginTop: '10px' } }, hero.title));
+    }
+    card.appendChild(h('p', { class: 'sub', style: { marginTop: '-2px' } }, hero.sub));
+
+    // QR card for ready state
+    if (order.state === 'ready') {
+      card.appendChild(h('hr', { class: 'hr-dashed' }));
+      const qrWrap = h('div', { class: 'col center', style: { alignItems: 'center', gap: '8px', margin: '6px 0' } });
+      qrWrap.appendChild(buildQR(order.orderNum));
+      qrWrap.appendChild(h('div', { style: { fontSize: '10px', fontWeight: '700', letterSpacing: '3px', color: 'var(--ink-soft)' } },
+        `ORDER · ${order.orderNum} · ${DAY_NAMES[new Date().getDay()].toUpperCase()} ${fmtTimeShort()}`
+      ));
+      card.appendChild(qrWrap);
+
+      const exp = h('div', { class: 'card acc flex center-y gap-10 mt-12', style: { padding: '12px' } },
+        h('div', { style: { width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' } }, '→'),
+        h('div', { style: { flex: '1' } },
+          h('div', { style: { fontWeight: '700', fontSize: '13px' } }, 'Express Lane open'),
+          h('div', { class: 'small mute' }, 'skip the cashier — scan & go')
+        )
+      );
+      card.appendChild(exp);
+
+      card.appendChild(h('button', { class: 'btn primary mt-12', onclick: () => {
+        transitionOrder('picked');
+        toast('Picked up — enjoy! ☕', '✓');
+        navigate('home', {}, { transition: 'fade' });
+      } }, "I've picked it up"));
+    }
+
+    // Picked + rating
+    if (order.state === 'picked') {
+      card.appendChild(h('hr', { class: 'hr-dashed' }));
+      if (!order.rated) {
+        card.appendChild(h('div', { style: { fontSize: '13px', fontWeight: '600', marginBottom: '6px' } }, 'Rate your morning'));
+        const ratingRow = h('div', { class: 'flex gap-6' });
+        [
+          { v: 'meh', e: '😐', l: 'meh' },
+          { v: 'good', e: '🙂', l: 'good' },
+          { v: 'ritual', e: '🤩', l: 'ritual' }
+        ].forEach(r => {
+          ratingRow.appendChild(h('button', {
+            class: 'chip' + (r.v === 'ritual' ? ' acc' : ''),
+            style: { flex: '1', justifyContent: 'center' },
+            onclick: () => {
+              order.rated = r.v;
+              archiveCurrentOrder(r.v);
+              toast(`Thanks — logged "${r.l}"`, r.e);
+              startTodayOrder('scheduled');
+              navigate('home', {}, { transition: 'fade' });
+            }
+          }, `${r.e} ${r.l}`));
+        });
+        card.appendChild(ratingRow);
+      } else {
+        card.appendChild(h('div', { class: 'small mute center' }, 'Rated — see you tomorrow.'));
+      }
+    }
+
+    // Items strip
+    if (order.state !== 'picked' && order.state !== 'skipped') {
+      card.appendChild(h('hr', { class: 'hr-dashed' }));
+      const itemRow = h('div', { class: 'flex center-y gap-10' });
+      const drink = DRINKS.find(d => d.id === order.items.drink);
+      itemRow.appendChild(h('div', { class: 'item-icon acc' }, drink?.emoji || '☕'));
+      const foodEmojis = (order.items.food || []).map(fid => FOODS.find(f => f.id === fid)?.emoji).filter(Boolean);
+      if (foodEmojis.length) {
+        itemRow.appendChild(h('div', { class: 'item-icon' }, foodEmojis[0]));
+      }
+      itemRow.appendChild(h('div', { style: { flex: '1', fontSize: '13px', lineHeight: '1.35' } },
+        h('div', { style: { fontWeight: '700' } }, `${order.items.size} ${drink?.name || 'Drink'}, ${order.items.cream} cream / ${order.items.sugar} sugar`),
+        h('div', { class: 'small mute' }, (order.items.food || []).map(f => FOODS.find(x => x.id === f)?.name).filter(Boolean).join(' · ') || 'Drink only')
+      ));
+      card.appendChild(itemRow);
+    }
+
+    // Actions
+    if (order.state === 'scheduled' || order.state === 'preparing') {
+      card.appendChild(h('div', { class: 'btn-row mt-12' },
+        h('button', { class: 'btn ghost sm', onclick: () => navigate('swap', {}, { transition: 'up' }) }, 'Swap today'),
+        h('button', { class: 'btn ghost sm', onclick: () => {
+          if (confirm("Skip today's order? You won't be charged.")) {
+            transitionOrder('skipped');
+            toast('Skipped today.', '✓');
+            navigate('home', {}, { transition: 'fade' });
+          }
+        } }, 'Skip today')
+      ));
+    }
+
+    if (order.state === 'skipped') {
+      card.appendChild(h('button', { class: 'btn ghost sm mt-12', onclick: () => {
+        startTodayOrder('scheduled');
+        toast('Back on for today', '↺');
+        navigate('home', {}, { transition: 'fade' });
+      } }, 'Bring it back'));
+    }
+
+    return card;
+  }
+
+  // ---- SWAP MODAL ----
+  views.swap = () => {
+    const u = currentUser();
+    if (!u || !u.currentOrder) { navigate('home'); return h('div'); }
+    const order = u.currentOrder;
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({
+      close: () => navigate('home', {}, { transition: 'left' }),
+      title: '',
+      action: h('span', { style: { color: 'var(--accent)', fontWeight: '700', fontSize: '14px', padding: '0 12px' } }, '15s to swap')
+    }));
+
+    // countdown
+    const bar = h('div', { class: 'countdown-bar', style: { margin: '0 22px' } },
+      h('div', { class: 'fill', style: { width: '100%' } })
+    );
+    view.appendChild(bar);
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+    content.appendChild(h('h1', { class: 'title' }, 'Pulling your usual.'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Anything to change today?'));
+
+    // Current items card
+    const drink = DRINKS.find(d => d.id === order.items.drink);
+    content.appendChild(h('div', { class: 'card flex center-y gap-10' },
+      h('div', { class: 'item-icon acc', style: { width: '54px', height: '54px', fontSize: '24px' } }, drink?.emoji || '☕'),
+      h('div', { style: { flex: '1', lineHeight: '1.35' } },
+        h('div', { style: { fontSize: '14px', fontWeight: '700' } }, `${order.items.size} ${drink?.name}, ${order.items.cream} cream / ${order.items.sugar} sugar`),
+        h('div', { class: 'small mute' }, (order.items.food || []).map(f => FOODS.find(x => x.id === f)?.name.toLowerCase()).filter(Boolean).join(' + ') || 'Drink only')
+      )
+    ));
+
+    content.appendChild(h('div', { class: 'eyebrow mute mt-8' }, 'Quick swaps'));
+
+    const swapOpts = h('div', { class: 'col gap-6' });
+    // Drink swaps
+    const drinkSwaps = DRINKS.filter(d => d.id !== order.items.drink).slice(0, 2);
+    drinkSwaps.forEach(d => {
+      swapOpts.appendChild(h('div', {
+        class: 'card soft card-press flex between center-y',
+        style: { padding: '12px' },
+        onclick: () => {
+          order.items.drink = d.id;
+          saveState();
+          toast(`Switched to ${d.name.toLowerCase()}`, d.emoji);
+          navigate('home', {}, { transition: 'left' });
+        }
+      },
+        h('span', { class: 'small' }, h('span', { style: { fontSize: '18px', marginRight: '6px' } }, d.emoji), 'Switch to ', h('b', null, d.name.toLowerCase())),
+        h('span', { style: { color: 'var(--accent)', fontWeight: '700' } }, '›')
+      ));
+    });
+
+    // Food swaps
+    const currentFood = order.items.food || [];
+    FOODS.filter(f => !currentFood.includes(f.id)).slice(0, 2).forEach(f => {
+      swapOpts.appendChild(h('div', {
+        class: 'card soft card-press flex between center-y',
+        style: { padding: '12px' },
+        onclick: () => {
+          order.items.food = (order.items.food || []).concat([f.id]);
+          saveState();
+          toast(`Added ${f.name.toLowerCase()}`, f.emoji);
+          navigate('home', {}, { transition: 'left' });
+        }
+      },
+        h('span', { class: 'small' }, h('span', { style: { fontSize: '18px', marginRight: '6px' } }, f.emoji), 'Add a ', h('b', null, f.name.toLowerCase())),
+        h('span', { style: { color: 'var(--accent)', fontWeight: '700' } }, '+')
+      ));
+    });
+
+    // Customize button
+    swapOpts.appendChild(h('div', {
+      class: 'card soft card-press flex between center-y',
+      style: { padding: '12px' },
+      onclick: () => navigate('onboard1', {}, { transition: 'right' })
+    },
+      h('span', { class: 'small' }, h('span', { style: { fontSize: '18px', marginRight: '6px' } }, '✏️'), 'Rebuild my usual'),
+      h('span', { style: { color: 'var(--accent)', fontWeight: '700' } }, '›')
+    ));
+
+    content.appendChild(swapOpts);
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', { class: 'btn primary', onclick: () => {
+      transitionOrder('preparing');
+      toast('Order placed — see you soon.', '☕');
+      navigate('home', {}, { transition: 'left' });
+    } }, 'Keep it · order now'));
+    footer.appendChild(h('button', { class: 'link', onclick: () => {
+      transitionOrder('skipped');
+      toast('Skipped today.', '✓');
+      navigate('home', {}, { transition: 'left' });
+    } }, 'Skip today (refund this morning)'));
+    view.appendChild(footer);
+
+    // run countdown
+    let pct = 100;
+    const startedAt = Date.now();
+    const duration = 15000;
+    const fill = bar.querySelector('.fill');
+    const titleEl = view.querySelector('.topbar .title')?.parentElement.querySelector('span[style*="700"]');
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      pct = Math.max(0, 100 - (elapsed / duration) * 100);
+      if (fill) fill.style.width = pct + '%';
+      const sec = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+      const head = view.querySelector('.topbar > span[style*="700"]');
+      if (head) head.textContent = sec + 's to swap';
+      if (pct <= 0) {
+        clearInterval(interval);
+        if (currentRoute.view === 'swap') {
+          transitionOrder('preparing');
+          toast('Time up — kept your usual.', '☕');
+          navigate('home', {}, { transition: 'left' });
+        }
+      }
+    }, 100);
+    view.dataset.cleanup = '1';
+    view._cleanup = () => clearInterval(interval);
+
+    return view;
+  };
+
+  // ---- LOCK SCREEN (geofence push preview) ----
+  views.lock = () => {
+    const u = currentUser();
+    if (!u) { navigate('welcome'); return h('div'); }
+
+    const view = h('div', { class: 'view lockscreen-bg' });
+    view.appendChild(statusBar('●●●● ▮'));
+
+    const content = h('div', { class: 'view-scroll pad col gap-12', style: { padding: '20px 22px' } });
+
+    const now = new Date();
+    content.appendChild(h('div', { class: 'lock-time' }, fmtTimeShort()));
+    content.appendChild(h('div', { class: 'lock-date' }, fmtDayDate()));
+
+    const notif = h('div', {
+      class: 'notif',
+      onclick: () => navigate('swap', {}, { transition: 'up' })
+    },
+      h('div', { class: 'head' },
+        h('span', null, h('b', null, 'TIMBOT')),
+        h('span', null, 'now')
+      ),
+      h('div', { class: 'ttl' }, 'Pulling your usual now.'),
+      h('div', { class: 'msg' },
+        fmtOrderSummary(u.usual), ' ',
+        h('b', { style: { color: 'var(--accent-2)' } }, 'Tap to swap →')
+      )
+    );
+    content.appendChild(notif);
+
+    content.appendChild(h('div', {
+      class: 'notif',
+      style: { opacity: '0.5' }
+    },
+      h('div', { class: 'head' },
+        h('span', null, 'CALENDAR'),
+        h('span', null, '7:58')
+      ),
+      h('div', { class: 'ttl' }, 'Standup · 9:00 AM')
+    ));
+
+    content.appendChild(h('div', { class: 'mt-auto center', style: { fontSize: '13px', opacity: '0.6', marginTop: 'auto', paddingTop: '40px' } },
+      'swipe up to open • or tap the push'
+    ));
+
+    view.appendChild(content);
+
+    const footer = h('div', { class: 'pad-bottom' });
+    footer.appendChild(h('button', {
+      class: 'btn ghost',
+      style: { borderColor: 'rgba(255,248,232,0.4)', color: '#fff8e8' },
+      onclick: () => navigate('home', {}, { transition: 'left' })
+    }, 'Skip preview · go to dashboard'));
+    view.appendChild(footer);
+
+    return view;
+  };
+
+  // ---- HISTORY ----
+  views.history = () => {
+    const u = currentUser();
+    if (!u) { navigate('welcome'); return h('div'); }
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('home', {}, { transition: 'left' }), title: 'Order history' }));
+
+    const content = h('div', { class: 'view-scroll pad col gap-12' });
+
+    if (u.history.length === 0) {
+      content.appendChild(h('div', { class: 'empty' },
+        h('div', { class: 'ico' }, '📅'),
+        h('div', { class: 'msg' }, 'No orders yet. Check back tomorrow morning.')
+      ));
+    } else {
+      // stats
+      const stats = h('div', { class: 'card', style: { padding: '14px' } });
+      stats.appendChild(h('div', { class: 'flex between center-y' },
+        h('div', null,
+          h('div', { class: 'eyebrow mute' }, 'Lifetime'),
+          h('div', { style: { fontWeight: '800', fontSize: '24px', marginTop: '4px' } }, `${u.history.length} morning${u.history.length === 1 ? '' : 's'}`)
+        ),
+        h('div', { style: { textAlign: 'right' } },
+          h('div', { class: 'eyebrow mute' }, 'Time saved'),
+          h('div', { style: { fontWeight: '800', fontSize: '24px', marginTop: '4px', color: 'var(--accent)' } }, `~${u.history.length * 3} min`)
+        )
+      ));
+      content.appendChild(stats);
+
+      const list = h('div', { class: 'card', style: { padding: '14px 16px' } });
+      u.history.slice(0, 30).forEach(h_ => {
+        const d = new Date(h_.date);
+        const drink = DRINKS.find(dr => dr.id === h_.items?.drink);
+        const ratingEmoji = h_.rating === 'ritual' ? '🤩' : h_.rating === 'good' ? '🙂' : h_.rating === 'meh' ? '😐' : '';
+        list.appendChild(h('div', { class: 'hist-row' },
+          h('div', { class: 'hist-day' },
+            h('div', { class: 'd' }, String(d.getDate())),
+            h('div', { class: 'm' }, MONTH_NAMES[d.getMonth()])
+          ),
+          h('div', { class: 'body' },
+            h('div', { class: 'summ' }, h_.state === 'skipped' ? 'Skipped' : `${h_.items?.size || 'L'} ${drink?.name || 'Coffee'}`),
+            h('div', { class: 'meta' }, h_.state === 'skipped' ? 'No charge' : `${(h_.items?.food || []).map(f => FOODS.find(x => x.id === f)?.name).filter(Boolean).join(' + ') || 'Drink only'}`)
+          ),
+          h('div', { class: 'rating' }, ratingEmoji)
+        ));
+      });
+      content.appendChild(list);
+    }
+
+    view.appendChild(content);
+    return view;
+  };
+
+  // ---- SETTINGS ----
+  views.settings = () => {
+    const u = currentUser();
+    if (!u) { navigate('welcome'); return h('div'); }
+
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('home', {}, { transition: 'left' }), title: 'Settings' }));
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+
+    // profile
+    const profile = h('div', { class: 'card flex center-y gap-12', style: { padding: '14px' } },
+      h('div', { class: 'avatar lg', style: { background: u.color } }, u.initials),
+      h('div', { style: { flex: '1' } },
+        h('div', { style: { fontWeight: '700', fontSize: '17px' } }, u.name),
+        h('div', { class: 'small mute' }, `Member since ${MONTH_NAMES[new Date(u.createdAt).getMonth()]} ${new Date(u.createdAt).getFullYear()}`),
+        h('div', { class: 'small mt-4' },
+          h('span', { class: 'badge dark', style: { fontSize: '9px' } }, `${u.plan} MORNINGS/WK`)
+        )
+      )
+    );
+    content.appendChild(profile);
+
+    // sections
+    const sec = h('div', { class: 'card', style: { padding: '4px 16px' } });
+    sec.appendChild(makeSettingRow('☕', 'My usual', fmtOrderSummary(u.usual) || 'Not set', () => navigate('onboard1', {}, { transition: 'right' })));
+    sec.appendChild(makeSettingRow('📅', 'Schedule', `${u.schedule?.days.filter(Boolean).length} days · ${formatTime(u.schedule?.time)}`, () => navigate('onboard2', {}, { transition: 'right' })));
+    sec.appendChild(makeSettingRow('💳', 'Plan', `${u.plan} mornings/week · $${PLANS.find(p => p.id === u.plan)?.weekly}/wk`, () => navigate('onboard3', {}, { transition: 'right' })));
+    sec.appendChild(makeSettingRow('📍', 'Pickup', u.store?.split(',')[0] || '—', () => navigate('onboard2', {}, { transition: 'right' })));
+    content.appendChild(sec);
+
+    // danger zone
+    const dz = h('div', { class: 'card', style: { padding: '4px 16px' } });
+    dz.appendChild(makeSettingRow('⏸', 'Pause for this week', 'Resume next Monday', () => {
+      toast('Week paused. Resume anytime.', '⏸');
+    }));
+    dz.appendChild(makeSettingRow('🔁', 'Switch profile', 'Demo as someone else', () => navigate('welcome', {}, { transition: 'left' })));
+    content.appendChild(dz);
+
+    content.appendChild(h('button', { class: 'btn danger', onclick: () => {
+      if (confirm(`Delete profile for ${u.name}? This wipes all of their data on this browser.`)) {
+        deleteUser(u.id);
+        toast('Profile deleted.', '🗑');
+        navigate('welcome', {}, { transition: 'left' });
+      }
+    } }, 'Delete this profile'));
+
+    content.appendChild(h('div', { style: { height: '20px' } }));
+
+    view.appendChild(content);
+    return view;
+  };
+
+  function makeSettingRow(icon, name, val, onClick) {
+    return h('div', { class: 'setting-row card-press', style: { paddingLeft: '0', paddingRight: '0', cursor: 'pointer' }, onclick: onClick },
+      h('div', { class: 'item-icon' }, icon),
+      h('div', { class: 'body' },
+        h('div', { class: 'nm' }, name),
+        h('div', { class: 'desc' }, val)
+      ),
+      h('span', { class: 'chev' })
+    );
+  }
+
+  // ----------------------------------------------------------------
+  // QR builder — deterministic CSS-grid "barcode" based on order ID
+  // (not a real QR, but looks like one and is consistent per order)
+  // ----------------------------------------------------------------
+  function buildQR(seed) {
+    const SIZE = 19;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+
+    const wrap = h('div', { class: 'qr' });
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+    svg.setAttribute('shape-rendering', 'crispEdges');
+
+    function isFinder(x, y) {
+      return (x < 7 && y < 7) || (x >= SIZE - 7 && y < 7) || (x < 7 && y >= SIZE - 7);
+    }
+    function isFinderFill(x, y) {
+      // Three finder squares with hollow centers
+      const inSquare = (sx, sy) => x >= sx && x < sx + 7 && y >= sy && y < sy + 7;
+      const inHollow = (sx, sy) => x >= sx + 2 && x < sx + 5 && y >= sy + 2 && y < sy + 5;
+      const tl = inSquare(0, 0); const tlH = inHollow(0, 0);
+      const tr = inSquare(SIZE - 7, 0); const trH = inHollow(SIZE - 7, 0);
+      const bl = inSquare(0, SIZE - 7); const blH = inHollow(0, SIZE - 7);
+      if (tl && !tlH && !((x === 1 || x === 5) && y >= 1 && y <= 5) && !((y === 1 || y === 5) && x >= 1 && x <= 5)) {
+        // outer ring fill
+        if (x === 0 || x === 6 || y === 0 || y === 6) return true;
+        if (x >= 2 && x <= 4 && y >= 2 && y <= 4) return true;
+        return false;
+      }
+      if (tl && !tlH) {
+        if (x === 0 || x === 6 || y === 0 || y === 6) return true;
+        if (x >= 2 && x <= 4 && y >= 2 && y <= 4) return true;
+      }
+      if (tr && !trH) {
+        if (x === SIZE - 7 || x === SIZE - 1 || y === 0 || y === 6) return true;
+        if (x >= SIZE - 5 && x <= SIZE - 3 && y >= 2 && y <= 4) return true;
+      }
+      if (bl && !blH) {
+        if (x === 0 || x === 6 || y === SIZE - 7 || y === SIZE - 1) return true;
+        if (x >= 2 && x <= 4 && y >= SIZE - 5 && y <= SIZE - 3) return true;
+      }
+      return false;
+    }
+
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        let fill = false;
+        if (isFinder(x, y)) {
+          fill = isFinderFill(x, y);
+        } else {
+          // deterministic random
+          hash = (hash * 31 + x * 17 + y * 13) | 0;
+          fill = (hash & 7) > 3;
+        }
+        if (fill) {
+          const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          r.setAttribute('x', x);
+          r.setAttribute('y', y);
+          r.setAttribute('width', '1');
+          r.setAttribute('height', '1');
+          r.setAttribute('fill', '#2a241d');
+          svg.appendChild(r);
+        }
+      }
+    }
+    wrap.appendChild(svg);
+    return wrap;
+  }
+
+  // ----------------------------------------------------------------
+  // DEMO PANEL
+  // ----------------------------------------------------------------
+  const demoBackdrop = document.getElementById('demo-backdrop');
+  const demoPanel = document.getElementById('demo-panel');
+  const demoFab = document.getElementById('demo-fab');
+
+  function openDemo() {
+    renderDemoPanel();
+    demoBackdrop.classList.add('open');
+    demoPanel.classList.add('open');
+  }
+  function closeDemo() {
+    demoBackdrop.classList.remove('open');
+    demoPanel.classList.remove('open');
+  }
+  demoFab.addEventListener('click', openDemo);
+  demoBackdrop.addEventListener('click', closeDemo);
+
+  function renderDemoPanel() {
+    demoPanel.innerHTML = '';
+
+    const header = h('div', { class: 'demo-header' },
+      h('h3', null, 'Demo ', h('span', { class: 'acc' }, 'controls')),
+      h('button', { class: 'iconbtn close', onclick: closeDemo, 'aria-label': 'Close' })
+    );
+    demoPanel.appendChild(header);
+
+    const body = h('div', { class: 'demo-body' });
+
+    // Users
+    body.appendChild(h('div', { class: 'demo-section' },
+      h('h4', null, 'Users on this device'),
+      ...Object.values(state.users).sort((a, b) => b.createdAt - a.createdAt).map(u => {
+        const row = h('div', {
+          class: 'demo-user-row' + (u.id === state.currentUserId ? ' active' : ''),
+          onclick: (e) => {
+            if (e.target.classList.contains('del')) return;
+            switchUser(u.id);
+            navigate(u.onboarded ? 'home' : 'onboard1', {}, { transition: 'fade' });
+            closeDemo();
+            toast(`Now viewing as ${u.name.split(' ')[0]}`, u.initials);
+          }
+        });
+        row.appendChild(h('div', { class: 'avatar sm', style: { background: u.color } }, u.initials));
+        row.appendChild(h('div', { class: 'info' },
+          h('div', { class: 'nm' }, u.name),
+          h('div', { class: 'meta' }, u.onboarded ? `${u.plan} mornings · ${STATE_LABELS[u.currentOrder?.state] || 'no active order'}` : 'Setup in progress')
+        ));
+        row.appendChild(h('button', {
+          class: 'del',
+          onclick: (e) => {
+            e.stopPropagation();
+            if (confirm(`Delete ${u.name}'s profile?`)) {
+              deleteUser(u.id);
+              renderDemoPanel();
+              render();
+              toast(`Deleted ${u.name}`, '🗑');
+            }
+          }
+        }, '🗑'));
+        demoPanel && row;
+        return row;
+      }),
+      h('button', {
+        class: 'btn ghost sm mt-8',
+        onclick: () => {
+          navigate('signup', {}, { transition: 'right' });
+          closeDemo();
+        }
+      }, '+ Add new user')
+    ));
+
+    const u = currentUser();
+    if (u && u.onboarded) {
+      // Simulate states
+      body.appendChild(h('div', { class: 'demo-section' },
+        h('h4', null, `Simulate — ${u.name.split(' ')[0]}'s order`),
+        h('div', { class: 'col gap-6' },
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              startTodayOrder('scheduled');
+              navigate('home', {}, { transition: 'fade' });
+              closeDemo();
+              toast("Reset to scheduled", "↺");
+            }
+          }, '○  Reset to scheduled'),
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              transitionOrder('preparing');
+              navigate('lock', {}, { transition: 'fade' });
+              closeDemo();
+            }
+          }, '🔔  Trigger geofence push'),
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              transitionOrder('preparing');
+              navigate('home', {}, { transition: 'fade' });
+              closeDemo();
+              toast('Now preparing', '◐');
+            }
+          }, '◐  Mark as preparing'),
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              transitionOrder('ready');
+              navigate('home', {}, { transition: 'fade' });
+              closeDemo();
+              toast('Ready for pickup!', '●');
+            }
+          }, '●  Mark as ready'),
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              transitionOrder('picked');
+              navigate('home', {}, { transition: 'fade' });
+              closeDemo();
+              toast('Picked up', '✓');
+            }
+          }, '✓  Mark as picked up')
+        )
+      ));
+
+      // Jump to screens
+      body.appendChild(h('div', { class: 'demo-section' },
+        h('h4', null, 'Jump to screen'),
+        h('div', { class: 'col gap-6' },
+          h('button', { class: 'btn subtle sm', onclick: () => { navigate('home', {}, { transition: 'fade' }); closeDemo(); } }, '🏠  Home dashboard'),
+          h('button', { class: 'btn subtle sm', onclick: () => { navigate('swap', {}, { transition: 'up' }); closeDemo(); } }, '🔄  Swap modal'),
+          h('button', { class: 'btn subtle sm', onclick: () => { navigate('lock', {}, { transition: 'fade' }); closeDemo(); } }, '🔒  Lock-screen push'),
+          h('button', { class: 'btn subtle sm', onclick: () => { navigate('history', {}, { transition: 'right' }); closeDemo(); } }, '📅  Order history'),
+          h('button', { class: 'btn subtle sm', onclick: () => { navigate('settings', {}, { transition: 'right' }); closeDemo(); } }, '⚙️  Settings'),
+          h('button', { class: 'btn subtle sm', onclick: () => { navigate('welcome', {}, { transition: 'left' }); closeDemo(); } }, '👋  Welcome / sign-in')
+        )
+      ));
+
+      // Quick history seed
+      body.appendChild(h('div', { class: 'demo-section' },
+        h('h4', null, 'Demo data'),
+        h('div', { class: 'col gap-6' },
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              const ratings = ['ritual', 'good', 'ritual', 'good', 'meh', 'ritual', 'good'];
+              for (let i = 1; i <= 7; i++) {
+                const date = Date.now() - i * 24 * 3600 * 1000;
+                u.history.push({
+                  state: i === 3 ? 'skipped' : 'picked',
+                  orderNum: generateOrderNum(),
+                  placedAt: date,
+                  completedAt: date,
+                  date,
+                  rating: i === 3 ? null : ratings[i - 1],
+                  items: u.usual
+                });
+              }
+              saveState();
+              toast('Seeded 7 days of history', '📅');
+              renderDemoPanel();
+            }
+          }, '+ Seed 7 days of history'),
+          h('button', {
+            class: 'btn subtle sm',
+            onclick: () => {
+              if (confirm('Wipe history for this user?')) {
+                u.history = [];
+                saveState();
+                renderDemoPanel();
+                render();
+                toast('History wiped', '🗑');
+              }
+            }
+          }, '🗑  Clear history')
+        )
+      ));
+    }
+
+    // Global
+    body.appendChild(h('div', { class: 'demo-section' },
+      h('h4', null, 'Global'),
+      h('div', { class: 'col gap-6' },
+        h('button', {
+          class: 'btn subtle sm',
+          onclick: () => {
+            const url = window.location.href;
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(url);
+              toast('Link copied to clipboard', '🔗');
+            } else {
+              prompt('Share this link:', url);
+            }
+          }
+        }, '🔗  Copy share link'),
+        h('button', {
+          class: 'btn subtle sm',
+          onclick: () => {
+            if (confirm('Wipe ALL profiles and data on this browser? This cannot be undone.')) {
+              localStorage.removeItem(STORAGE_KEY);
+              state = { users: {}, currentUserId: null };
+              if (channel) channel.postMessage({ type: 'state-update', from: clientId });
+              renderDemoPanel();
+              navigate('welcome', {}, { transition: 'fade' });
+              closeDemo();
+              toast('All data wiped', '🗑');
+            }
+          }
+        }, '⚠️  Reset everything')
+      )
+    ));
+
+    body.appendChild(h('div', { class: 'small mute mt-16 center' },
+      'Frontend-only prototype · State stays in this browser'
+    ));
+
+    demoPanel.appendChild(body);
+  }
+
+  // ----------------------------------------------------------------
+  // BOOT
+  // ----------------------------------------------------------------
+  loadState();
+
+  // Route from URL hash if present
+  if (window.location.hash) {
+    const v = window.location.hash.slice(1);
+    if (views[v]) currentRoute = { view: v, params: {} };
+  } else if (currentUser()) {
+    currentRoute = { view: currentUser().onboarded ? 'home' : 'onboard1', params: {} };
+    transition = 'fade';
+  }
+
+  render();
+  renderDemoPanel();
+
+  // expose for debugging
+  window.TIMBOT = { state, navigate, currentUser };
+
+  // SW registration
+  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>

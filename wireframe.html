@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TimBot — Wireframe Prototype</title>
+<meta name="description" content="TimBot — commuter auto-order prototype. 7-screen mobile wireframe walkthrough." />
+<meta name="theme-color" content="#c25a30" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="TimBot" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+<meta property="og:title" content="TimBot — Wireframe Prototype" />
+<meta property="og:description" content="Commuter auto-order prototype. Swipe through the flow." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="icons/icon-512.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Kalam:wght@300;400;700&family=Inter:wght@400;500;600;700&family=Fraunces:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #f4ede0;
+    --paper-2: #ece4d2;
+    --ink: #2a241d;
+    --ink-soft: #5b5045;
+    --ink-mute: #8a7e70;
+    --accent: oklch(64% 0.16 38);     /* warm burnt — NOT Tims red */
+    --accent-soft: oklch(64% 0.16 38 / 0.14);
+    --grid: rgba(60, 50, 40, 0.06);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(0,0,0,0.025), transparent 60%),
+      radial-gradient(circle at 80% 90%, rgba(0,0,0,0.025), transparent 60%),
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: auto, auto, 24px 24px, 24px 24px;
+  }
+
+  .canvas {
+    width: 2480px;
+    padding: 64px 80px 120px;
+    position: relative;
+  }
+
+  /* ——— masthead ——— */
+  .masthead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 40px;
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+    border-bottom: 2px dashed rgba(42,36,29,0.25);
+  }
+  .masthead h1 {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 84px;
+    line-height: 0.95;
+    margin: 0 0 22px 0;
+    letter-spacing: -0.5px;
+    max-width: 1400px;
+  }
+  .masthead h1 .br { display: block; }
+  .masthead h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .masthead .sub {
+    font-family: 'Kalam', cursive;
+    font-size: 20px;
+    color: var(--ink-soft);
+    max-width: 720px;
+    line-height: 1.5;
+  }
+  .meta {
+    font-family: 'Kalam', cursive;
+    font-size: 15px;
+    color: var(--ink-mute);
+    text-align: right;
+    line-height: 1.7;
+  }
+  .meta b { color: var(--ink); font-weight: 700; }
+  .meta .stamp {
+    display: inline-block;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 12px;
+    transform: rotate(-3deg);
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 28px;
+    margin-bottom: 100px;
+    font-family: 'Kalam', cursive;
+    font-size: 15px;
+    color: var(--ink-soft);
+    flex-wrap: wrap;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 18px; height: 18px; border: 2px solid var(--ink); border-radius: 4px; }
+  .swatch.acc { background: var(--accent); border-color: var(--accent); }
+  .swatch.placeholder {
+    background: repeating-linear-gradient(135deg, rgba(42,36,29,0.18) 0 4px, transparent 4px 8px);
+  }
+  .swatch.box { background: transparent; }
+
+  /* ——— flow rows ——— */
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 60px;
+    position: relative;
+    margin-bottom: 80px;
+  }
+  .row-label {
+    position: absolute;
+    top: -78px;
+    left: 0;
+    font-family: 'Caveat', cursive;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .row-label::before {
+    content: "";
+    display: inline-block;
+    width: 64px;
+    height: 2px;
+    background: var(--accent);
+    vertical-align: middle;
+    margin-right: 14px;
+    margin-bottom: 6px;
+  }
+
+  /* ——— screen card ——— */
+  .screen {
+    width: 390px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .screen-label {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 28px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .screen-label .n {
+    color: var(--accent);
+    font-size: 32px;
+  }
+  .screen-blurb {
+    font-family: 'Kalam', cursive;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    line-height: 1.45;
+    min-height: 40px;
+  }
+
+  /* ——— phone frame (sketchy) ——— */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #fffaf0;
+    border: 2.5px solid var(--ink);
+    border-radius: 44px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 4px 5px 0 rgba(42,36,29,0.15);
+  }
+  .phone::before {
+    /* notch */
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 28px;
+    background: var(--ink);
+    border-radius: 16px;
+    z-index: 5;
+  }
+  .statusbar {
+    height: 44px;
+    padding: 14px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+  }
+  .statusbar .right { display: flex; gap: 6px; }
+  .home-indicator {
+    position: absolute;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 130px; height: 4px;
+    background: var(--ink);
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+
+  /* ——— screen content shared ——— */
+  .scr {
+    padding: 16px 22px 40px;
+    height: calc(100% - 44px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+  }
+  .scr .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .scr .topbar .back { font-size: 22px; line-height: 1; }
+  .scr .topbar .dots { letter-spacing: 2px; }
+
+  .h-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .h-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--ink);
+    margin: 0;
+  }
+  .h-serif {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 38px;
+    line-height: 1.05;
+    color: var(--ink);
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+  .h-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    margin: 0;
+  }
+  .ui-text { font-family: 'Inter', sans-serif; font-size: 14px; color: var(--ink); }
+  .ui-mute { color: var(--ink-soft); }
+
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--ink);
+    color: #fff8e8;
+    text-align: center;
+    border: 2px solid var(--ink);
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+  .link {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+  }
+  .chip.on { background: var(--ink); color: #fff8e8; }
+  .chip.acc { border-color: var(--accent); color: var(--accent); }
+  .chip.acc.on { background: var(--accent); color: #fff; }
+
+  .placeholder-img {
+    background:
+      repeating-linear-gradient(135deg, rgba(42,36,29,0.16) 0 6px, transparent 6px 14px),
+      #f0e6d2;
+    border: 1.5px dashed rgba(42,36,29,0.45);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Kalam', cursive;
+    font-size: 13px;
+    color: rgba(42,36,29,0.7);
+    text-align: center;
+    padding: 8px;
+    line-height: 1.3;
+  }
+
+  .card {
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    padding: 14px;
+    background: #fffefa;
+  }
+  .card.soft { border-color: rgba(42,36,29,0.35); }
+  .card.acc { border-color: var(--accent); background: var(--accent-soft); }
+  .card.dark { background: var(--ink); color: #fff8e8; border-color: var(--ink); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+  }
+  .badge.outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+
+  /* ——— annotations (caveat callouts) ——— */
+  .ann {
+    position: absolute;
+    font-family: 'Caveat', cursive;
+    font-size: 19px;
+    color: var(--ink-soft);
+    line-height: 1.1;
+    max-width: 200px;
+    z-index: 2;
+  }
+  .ann .arr {
+    display: block;
+    color: var(--accent);
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  /* ——— flow arrow between screens ——— */
+  .flow-arrow {
+    position: absolute;
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 60px;
+    text-align: center;
+    z-index: 3;
+  }
+  .flow-arrow svg { display: block; }
+  .flow-arrow .lbl { font-size: 18px; }
+
+  /* per-screen content tweaks */
+  .weekgrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day {
+    aspect-ratio: 1 / 1.15;
+    border: 1.5px solid var(--ink);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #fffefa;
+  }
+  .day .d { font-size: 14px; font-weight: 700; }
+  .day.on { background: var(--ink); color: #fff8e8; border-color: var(--ink); }
+  .day.off { color: var(--ink-mute); border-color: rgba(42,36,29,0.25); background: transparent; }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1.5px solid rgba(42,36,29,0.25);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+  }
+  .time-row b { font-weight: 700; }
+
+  .tier {
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fffefa;
+    position: relative;
+  }
+  .tier.popular { border-color: var(--accent); background: var(--accent-soft); }
+  .tier .num {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .tier.popular .num { border-color: var(--accent); color: var(--accent); }
+  .tier .body { flex: 1; line-height: 1.25; }
+  .tier .body .t1 { font-family: 'Inter'; font-weight: 700; font-size: 14px; }
+  .tier .body .t2 { font-family: 'Inter'; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .tier .body .save { font-family: 'Inter'; font-size: 11px; color: var(--accent); font-weight: 700; margin-top: 3px; }
+  .tier .price { text-align: right; line-height: 1.1; }
+  .tier .price .p1 { font-family: 'Inter'; font-weight: 700; font-size: 16px; }
+  .tier .price .p2 { font-family: 'Inter'; font-size: 10px; color: var(--ink-soft); }
+  .tier .ribbon {
+    position: absolute;
+    top: -10px; right: 10px;
+  }
+
+  /* status states column in screen 5 */
+  .state-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1.5px solid rgba(42,36,29,0.2);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .state-pill .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(42,36,29,0.2);
+  }
+  .state-pill.active { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .state-pill.active .dot { background: var(--accent); }
+  .state-pill.done .dot { background: var(--ink); }
+  .state-pill.done { color: var(--ink); }
+
+  .progress {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin: 4px 0 2px;
+  }
+  .progress .seg {
+    height: 4px;
+    background: rgba(42,36,29,0.15);
+    border-radius: 3px;
+  }
+  .progress .seg.on { background: var(--accent); }
+
+  /* lock screen + swap mini-stack */
+  .lockscreen {
+    background: linear-gradient(160deg, #1a1612, #2a241d);
+    color: #fff8e8;
+    height: 100%;
+    padding: 50px 22px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .lock-time {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 64px;
+    text-align: center;
+    letter-spacing: -2px;
+    margin-top: 30px;
+    line-height: 1;
+  }
+  .lock-date {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    text-align: center;
+    opacity: 0.8;
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+  .notif {
+    background: rgba(255, 248, 232, 0.13);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,248,232,0.25);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .notif .head {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+  }
+  .notif .head b { color: var(--accent); font-weight: 700; letter-spacing: 1px; }
+  .notif .ttl { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; }
+  .notif .msg { font-family: 'Inter', sans-serif; font-size: 13px; opacity: 0.92; line-height: 1.35; }
+
+  /* QR placeholder */
+  .qr {
+    width: 180px;
+    height: 180px;
+    background:
+      conic-gradient(from 0deg, var(--ink) 25%, transparent 25% 50%, var(--ink) 50% 75%, transparent 75%),
+      repeating-conic-gradient(var(--ink) 0deg 8deg, transparent 8deg 16deg);
+    border: 4px solid var(--ink);
+    border-radius: 12px;
+    position: relative;
+  }
+  .qr::after {
+    content: "";
+    position: absolute;
+    inset: 16px;
+    background:
+      repeating-linear-gradient(0deg, var(--ink) 0 4px, transparent 4px 9px),
+      repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 9px);
+    background-blend-mode: multiply;
+    background-color: #fffefa;
+    border: 8px solid #fffefa;
+  }
+
+  /* footer */
+  .footer-note {
+    margin-top: 40px;
+    font-family: 'Kalam', cursive;
+    font-size: 16px;
+    color: var(--ink-mute);
+    max-width: 900px;
+    line-height: 1.55;
+    border-top: 2px dashed rgba(42,36,29,0.2);
+    padding-top: 24px;
+  }
+  .footer-note b { color: var(--ink); }
+
+  /* ============ MOBILE REVIEW MODE ============
+     On phones / narrow tablets, the wide canvas becomes a
+     full-screen, one-screen-per-page swipe deck via scroll-snap.
+     ============================================ */
+  @media (max-width: 900px) {
+    html, body {
+      overflow-x: hidden;
+      background: var(--paper);
+    }
+    body {
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+      overflow-y: scroll;
+      height: 100vh;
+      height: 100svh;
+      background-image: none; /* drop grid on mobile, cleaner */
+    }
+    .canvas {
+      width: 100% !important;
+      padding: 0 !important;
+      counter-reset: m-screen;
+    }
+    .masthead, .legend, .footer-note,
+    .row-label, .flow-arrow, .ann,
+    .screen-blurb {
+      display: none !important;
+    }
+    .row {
+      display: block !important;
+      gap: 0 !important;
+      margin: 0 !important;
+    }
+    .screen {
+      counter-increment: m-screen;
+      width: 100vw !important;
+      max-width: 100vw;
+      margin-left: 0 !important;
+      height: 100vh;
+      height: 100svh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: max(env(safe-area-inset-top), 14px) 12px max(env(safe-area-inset-bottom), 14px);
+      overflow: hidden;
+      position: relative;
+    }
+    .screen-label {
+      position: absolute;
+      top: max(env(safe-area-inset-top), 14px);
+      left: 16px;
+      right: 16px;
+      text-align: center;
+      font-size: 22px;
+      margin: 0;
+      justify-content: center;
+    }
+    .screen-label::after {
+      content: counter(m-screen) " / 7";
+      display: block;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--ink-mute);
+      width: 100%;
+      text-align: center;
+      margin-top: 2px;
+    }
+    .screen > .phone,
+    .screen .phone-stage {
+      transform: scale(var(--m-scale, 1));
+      transform-origin: center center;
+      flex-shrink: 0;
+    }
+    .mobile-pager {
+      position: fixed;
+      bottom: max(env(safe-area-inset-bottom), 14px);
+      right: 14px;
+      z-index: 100;
+      background: rgba(42, 36, 29, 0.82);
+      color: #fff8e8;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .mobile-hint {
+      position: fixed;
+      bottom: max(env(safe-area-inset-bottom), 14px);
+      left: 14px;
+      z-index: 100;
+      font-family: 'Caveat', cursive;
+      font-size: 18px;
+      color: var(--ink-soft);
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    .mobile-hint.hide { opacity: 0; }
+  }
+  @media (min-width: 901px) {
+    .mobile-pager, .mobile-hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <!-- masthead -->
+  <header class="masthead">
+    <div>
+      <h1>TimBot <em>—</em> <span class="br">Skip the line. Keep the ritual.</span></h1>
+      <div class="sub">Wireframe v1 · 7 screens · iOS 390×844 · Setup flow (top) + day-of flow (bottom). Real menu copy generic-ified for wireframe stage; brand polish lives in v2.</div>
+    </div>
+    <div class="meta">
+      Designer: <b>You</b> · for <b>Sandra</b>, 25–35, GO Train commuter<br/>
+      Goal: <b>zero-decision mornings</b>, sub-1-min pickup<br/>
+      <span class="stamp">low-fi · explore</span>
+    </div>
+  </header>
+
+  <!-- legend -->
+  <div class="legend">
+    <span><span class="swatch box"></span> screen frame</span>
+    <span><span class="swatch acc"></span> primary CTA / "TimBot moment"</span>
+    <span><span class="swatch placeholder"></span> imagery to drop in</span>
+    <span style="font-style: italic;">→ orange arrows show user flow</span>
+    <span style="font-style: italic;">callouts in Caveat = my notes</span>
+  </div>
+
+  <!-- ============ ROW 1: SETUP ============ -->
+  <div class="row">
+    <div class="row-label">Setup flow — once, on first run</div>
+
+    <!-- 01 ONBOARDING -->
+    <div class="screen">
+      <div class="screen-label"><span class="n">01</span> Onboarding intro</div>
+      <div class="screen-blurb">One screen. One promise. One tap in. No carousel, no permissions wall up front.</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="right">●●● ▮</span></div>
+        <div class="scr" style="justify-content: space-between; padding-top: 40px;">
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div class="h-eyebrow">Introducing TimBot</div>
+            <div class="placeholder-img" style="height: 200px;">[ hero illo / steam from cup<br/>+ subtle bot mark ]</div>
+            <h2 class="h-serif">Skip the line.<br/>Keep the ritual.</h2>
+            <p class="h-sub">Pre-pay your week. Order pulls itself when you're 10 minutes out. Walk in, walk out.</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="btn primary">Set up TimBot →</div>
+            <div class="link">I'll do it later</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="ann" style="top: 240px; right: -180px; width: 170px;">
+        <span class="arr">↙</span>
+        Serif italic for the <b style="color:var(--ink)">emotional</b> line — only place it appears.
+      </div>
+      <div class="ann" style="bottom: 60px; right: -180px; width: 170px;">
+        <span class="arr">↖</span>
+        Single primary CTA. No "Learn more" rabbit hole.
+      </div>
+    </div>
+
+    <!-- arrow 1→2 -->
+    <div class="flow-arrow" style="top: 460px; left: 410px;">
+      <svg width="50" height="20" viewBox="0 0 50 20" fill="none">
+        <path d="M2 10 Q 25 4 46 10 M40 5 L48 10 L40 15" stroke="oklch(64% 0.16 38)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">tap "set up"</span>
+    </div>
+
+    <!-- 02 BUILD USUAL -->
+    <div class="screen">
+      <div class="screen-label"><span class="n">02</span> Build your usual</div>
+      <div class="screen-blurb">Pick once, repeat forever. Single scroll: drink → food → extras. Photos do the heavy lifting.</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="right">●●● ▮</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="back">←</span><span>Step 1 of 3</span><span class="dots">···</span></div>
+          <div class="progress"><div class="seg on"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div>
+          <h2 class="h-title">Build your usual</h2>
+          <p class="h-sub" style="margin-top:-6px;">Tap to add. We remember everything.</p>
+
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+            <div class="h-eyebrow" style="color:var(--ink-soft)">Drink</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="chip on">Coffee</span>
+              <span class="chip">Latte</span>
+              <span class="chip">Tea</span>
+              <span class="chip">Iced</span>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+              <span class="chip">S</span><span class="chip">M</span><span class="chip on">L</span><span class="chip">XL</span>
+            </div>
+            <div class="ui-text ui-mute" style="font-size:12px; margin-top:2px;">2 cream · 2 sugar &nbsp; <span style="color:var(--accent); font-weight:600;">edit ›</span></div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+            <div class="h-eyebrow" style="color:var(--ink-soft)">Food</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+              <div class="placeholder-img" style="height: 95px;">[ filled<br/>donut ]</div>
+              <div class="placeholder-img" style="height: 95px; border-color: var(--accent); background: var(--accent-soft);">[ breakfast<br/>wrap ] ✓</div>
+              <div class="placeholder-img" style="height: 95px;">[ bagel +<br/>cream cheese ]</div>
+              <div class="placeholder-img" style="height: 95px;">[ muffin ]</div>
+            </div>
+          </div>
+
+          <div style="margin-top: auto; display:flex; flex-direction:column; gap:8px;">
+            <div class="card soft" style="padding: 10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+              <span class="ui-text"><b>+ add</b> hash brown · $1.49</span>
+              <span style="font-family:'Inter'; font-weight:700; color:var(--accent); font-size:13px;">+</span>
+            </div>
+            <div class="btn primary">Save as my usual</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="ann" style="top: 380px; right: -180px; width: 170px;">
+        <span class="arr">↙</span>
+        Big food tiles, real photos in v2 — placeholder pattern for now.
+      </div>
+      <div class="ann" style="bottom: 110px; right: -180px; width: 180px;">
+        <span class="arr">↖</span>
+        Single CTA. Order summary lives in the chips above — no separate review screen.
+      </div>
+    </div>
+
+    <!-- arrow 2→3 -->
+    <div class="flow-arrow" style="top: 460px; left: 870px;">
+      <svg width="50" height="20" viewBox="0 0 50 20" fill="none">
+        <path d="M2 10 Q 25 4 46 10 M40 5 L48 10 L40 15" stroke="oklch(64% 0.16 38)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">save usual</span>
+    </div>
+
+    <!-- 03 PICK WEEK -->
+    <div class="screen">
+      <div class="screen-label"><span class="n">03</span> Pick your week</div>
+      <div class="screen-blurb">Default = Mon–Fri @ 8:15 AM. One toggle to break the default if days vary.</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="right">●●● ▮</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="back">←</span><span>Step 2 of 3</span><span class="dots">···</span></div>
+          <div class="progress"><div class="seg on"></div><div class="seg on"></div><div class="seg"></div><div class="seg"></div></div>
+          <h2 class="h-title">Pick your week</h2>
+          <p class="h-sub" style="margin-top:-6px;">Which mornings should TimBot run?</p>
+
+          <div class="weekgrid" style="margin-top:6px;">
+            <div class="day off"><span>S</span><span class="d">26</span></div>
+            <div class="day on"><span>M</span><span class="d">27</span></div>
+            <div class="day on"><span>T</span><span class="d">28</span></div>
+            <div class="day on"><span>W</span><span class="d">29</span></div>
+            <div class="day on"><span>T</span><span class="d">30</span></div>
+            <div class="day on"><span>F</span><span class="d">31</span></div>
+            <div class="day off"><span>S</span><span class="d">1</span></div>
+          </div>
+
+          <div class="card soft" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div class="ui-text" style="flex:1; min-width:0;"><b>Default arrival</b><br/><span class="ui-mute" style="font-size:12px;">applies to all selected days</span></div>
+              <div style="font-family:'Inter'; font-weight:700; font-size:20px; color:var(--accent); flex-shrink:0;">8:15 AM</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top: 1px dashed rgba(42,36,29,0.2);">
+              <div class="ui-text" style="font-size:13px;">Set a different time per day</div>
+              <!-- toggle -->
+              <div style="width:42px; height:24px; border-radius:12px; background:rgba(42,36,29,0.18); position:relative; border:1.5px solid var(--ink);">
+                <div style="position:absolute; left:2px; top:1px; width:18px; height:18px; border-radius:50%; background:#fff8e8; border:1.5px solid var(--ink);"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+            <div class="time-row"><span>Mon</span><span><b>8:15 AM</b> · Union Station</span></div>
+            <div class="time-row"><span>Tue</span><span><b>8:15 AM</b> · Union Station</span></div>
+            <div class="time-row" style="opacity:0.45; font-style:italic; font-size:12px;"><span colspan="2" style="width:100%; text-align:center;">…hidden when toggle is off</span></div>
+          </div>
+
+          <div style="margin-top:auto;" class="btn primary">Continue</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="ann" style="top: 280px; right: -180px; width: 170px;">
+        <span class="arr">↙</span>
+        Tap a day to toggle. Past days greyed.
+      </div>
+      <div class="ann" style="bottom: 200px; right: -180px; width: 180px;">
+        <span class="arr">↖</span>
+        Per-day rows only show when toggle is on — keeps the default fast.
+      </div>
+    </div>
+
+    <!-- arrow 3→4 -->
+    <div class="flow-arrow" style="top: 460px; left: 1330px;">
+      <svg width="50" height="20" viewBox="0 0 50 20" fill="none">
+        <path d="M2 10 Q 25 4 46 10 M40 5 L48 10 L40 15" stroke="oklch(64% 0.16 38)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">continue</span>
+    </div>
+
+    <!-- 04 TIER SELECT -->
+    <div class="screen">
+      <div class="screen-label"><span class="n">04</span> Pick your plan</div>
+      <div class="screen-blurb">3 / 4 / 5 mornings. Show per-morning math + savings up front — closes the value gap.</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="right">●●● ▮</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="back">←</span><span>Step 3 of 3</span><span class="dots">···</span></div>
+          <div class="progress"><div class="seg on"></div><div class="seg on"></div><div class="seg on"></div><div class="seg"></div></div>
+          <h2 class="h-title">Lock in your week</h2>
+          <p class="h-sub" style="margin-top:-6px;">Pre-pay, save, no surprises.</p>
+
+          <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
+
+            <div class="tier">
+              <div class="num">3</div>
+              <div class="body">
+                <div class="t1">3 mornings / week</div>
+                <div class="t2">Light routine · WFH-friendly</div>
+                <div class="save">Save $3 vs. à la carte</div>
+              </div>
+              <div class="price">
+                <div class="p1">$14<span style="font-size:11px; color:var(--ink-soft);">/wk</span></div>
+                <div class="p2">$4.67 / morning</div>
+              </div>
+            </div>
+
+            <div class="tier popular">
+              <div class="ribbon"><span class="badge">Most picked</span></div>
+              <div class="num">4</div>
+              <div class="body">
+                <div class="t1">4 mornings / week</div>
+                <div class="t2">Hybrid commuter sweet spot</div>
+                <div class="save">Save $5 vs. à la carte</div>
+              </div>
+              <div class="price">
+                <div class="p1">$18<span style="font-size:11px; color:var(--ink-soft);">/wk</span></div>
+                <div class="p2">$4.50 / morning</div>
+              </div>
+            </div>
+
+            <div class="tier">
+              <div class="ribbon"><span class="badge outline">Exclusive savings</span></div>
+              <div class="num">5</div>
+              <div class="body">
+                <div class="t1">5 mornings / week</div>
+                <div class="t2">Full commuter — best value</div>
+                <div class="save">Save $8 vs. à la carte</div>
+              </div>
+              <div class="price">
+                <div class="p1">$21<span style="font-size:11px; color:var(--ink-soft);">/wk</span></div>
+                <div class="p2">$4.20 / morning</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:6px;">
+            <div class="btn primary">Start TimBot — $18/wk</div>
+            <div class="link">Cancel or pause anytime</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="ann" style="top: 470px; right: -180px; width: 175px;">
+        <span class="arr">↙</span>
+        <b style="color:var(--ink)">Per-morning math</b> is the wedge — makes the sub feel cheaper than a one-off.
+      </div>
+      <div class="ann" style="top: 590px; right: -180px; width: 175px;">
+        <span class="arr">↙</span>
+        "Exclusive savings" badge surfaces the value gap explicitly.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ROW 2: DAY-OF ============ -->
+  <div class="row" style="margin-top: 150px;">
+    <div class="row-label">Day-of flow — every weekday morning</div>
+
+    <!-- 05 HOME DASHBOARD -->
+    <div class="screen">
+      <div class="screen-label"><span class="n">05</span> Home dashboard (day-of)</div>
+      <div class="screen-blurb">Today's card lives at the top of the existing app home. Four status states shown on the right.</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="right">●●● ▮</span></div>
+        <div class="scr">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="h-eyebrow" style="color:var(--ink-soft)">Tuesday, May 28</div>
+              <h2 class="h-title" style="font-size:22px;">Good morning, Sandra</h2>
+            </div>
+            <div style="width:36px; height:36px; border-radius:50%; border:1.5px solid var(--ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-family:'Inter';">S</div>
+          </div>
+
+          <!-- TODAY CARD -->
+          <div class="card" style="display:flex; flex-direction:column; gap:10px; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="badge">● Preparing</span>
+              <span class="ui-mute" style="font-size:11px; font-family:'Inter';">8:15 AM · Union Station</span>
+            </div>
+            <h3 class="h-serif" style="font-size:24px;">You're 10 min out.</h3>
+            <p class="h-sub" style="font-size:13px; margin-top:-4px;">We pulled your usual at 8:05. Ready when you walk in.</p>
+
+            <div style="display:flex; gap:10px; align-items:center; padding-top:8px; border-top: 1px dashed rgba(42,36,29,0.2);">
+              <div class="placeholder-img" style="width:48px; height:48px; border-radius:8px; font-size:9px;">drink</div>
+              <div class="placeholder-img" style="width:48px; height:48px; border-radius:8px; font-size:9px;">wrap</div>
+              <div class="ui-text" style="font-size:12px; line-height:1.3;">
+                <b>Large coffee</b>, 2 &amp; 2<br/>
+                <span class="ui-mute">Breakfast wrap</span>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:4px;">
+              <div class="btn ghost" style="border-color:var(--ink); font-size:13px; padding:11px;">Swap today</div>
+              <div class="btn ghost" style="border-color:var(--ink); font-size:13px; padding:11px;">Skip today</div>
+            </div>
+          </div>
+
+          <div class="h-eyebrow" style="color:var(--ink-soft); margin-top:4px;">This week</div>
+          <div style="display:flex; gap:6px;">
+            <div class="day on" style="aspect-ratio:1/1.15; flex:1;"><span style="font-size:9px;">M</span><span class="d">✓</span></div>
+            <div class="day on" style="aspect-ratio:1/1.15; flex:1; background:var(--accent); border-color:var(--accent);"><span style="font-size:9px;">T</span><span class="d">●</span></div>
+            <div class="day" style="aspect-ratio:1/1.15; flex:1;"><span style="font-size:9px;">W</span><span class="d">·</span></div>
+            <div class="day" style="aspect-ratio:1/1.15; flex:1;"><span style="font-size:9px;">T</span><span class="d">·</span></div>
+            <div class="day" style="aspect-ratio:1/1.15; flex:1;"><span style="font-size:9px;">F</span><span class="d">·</span></div>
+          </div>
+
+          <div style="margin-top:auto;" class="link">Manage TimBot · Pause week</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+
+      <!-- status states column -->
+      <div style="position:absolute; top: 64px; left: 410px; width: 200px; display:flex; flex-direction:column; gap:8px;">
+        <div class="ann" style="position:static; max-width:none; color:var(--ink); font-size:21px;">4 status states <span class="arr" style="display:inline; font-size:18px;">→</span></div>
+        <div class="state-pill done"><span class="dot"></span>Scheduled · 8:15 AM</div>
+        <div class="state-pill active"><span class="dot"></span>Preparing · 10 min out</div>
+        <div class="state-pill"><span class="dot"></span>Ready for pickup</div>
+        <div class="state-pill"><span class="dot"></span>Picked up · rate?</div>
+        <div class="ann" style="position:static; max-width:none; margin-top:6px; font-size:17px; line-height:1.3;">
+          Card swaps copy + badge color per state. Only one rendered at a time.
+        </div>
+      </div>
+    </div>
+
+    <!-- arrow 5→6 -->
+    <div class="flow-arrow" style="top: 460px; left: 1100px;">
+      <svg width="60" height="20" viewBox="0 0 60 20" fill="none">
+        <path d="M2 10 Q 30 4 56 10 M50 5 L58 10 L50 15" stroke="oklch(64% 0.16 38)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">geofence trips</span>
+    </div>
+
+    <!-- 06 GEOFENCE + SWAP -->
+    <div class="screen" style="margin-left: 120px;">
+      <div class="screen-label"><span class="n">06</span> Geofence push + 3-sec swap</div>
+      <div class="screen-blurb">Triggered ~10 min from store. Lock-screen → tap → swap modal with a quick countdown.</div>
+
+      <!-- two mini-phones inside -->
+      <div class="phone-stage" style="display:flex; gap:14px; align-items:flex-start;">
+        <!-- LOCK -->
+        <div class="phone" style="width: 290px; height: 628px; border-radius: 36px;">
+          <div class="statusbar" style="padding:14px 22px 0; color:#fff8e8; position:absolute; top:0; left:0; right:0; z-index:6;"><span>8:04</span><span class="right">●●● ▮</span></div>
+          <div class="lockscreen">
+            <div class="lock-time">8:04</div>
+            <div class="lock-date">Tuesday, May 28</div>
+            <div class="notif">
+              <div class="head"><span><b>TIMBOT</b></span><span>now</span></div>
+              <div class="ttl">Pulling your usual now.</div>
+              <div class="msg">Large coffee + breakfast wrap. <b style="color:var(--accent);">Tap to swap →</b></div>
+            </div>
+            <div class="notif" style="opacity:0.5;">
+              <div class="head"><span>CALENDAR</span><span>7:58</span></div>
+              <div class="ttl">Standup · 9:00 AM</div>
+            </div>
+            <div style="margin-top:auto; text-align:center; font-family:'Inter'; font-size:13px; opacity:0.6;">swipe up to open</div>
+          </div>
+          <div class="home-indicator" style="background:#fff8e8;"></div>
+        </div>
+
+        <!-- SWAP MODAL -->
+        <div class="phone" style="width: 290px; height: 628px; border-radius: 36px;">
+          <div class="statusbar"><span>8:04</span><span class="right">●●● ▮</span></div>
+          <div class="scr">
+            <div class="topbar"><span class="back">✕</span><span style="color:var(--accent); font-weight:700;">3s to swap…</span><span></span></div>
+            <!-- countdown bar -->
+            <div style="height:4px; background:rgba(42,36,29,0.12); border-radius:3px; overflow:hidden;">
+              <div style="width:55%; height:100%; background:var(--accent);"></div>
+            </div>
+
+            <h2 class="h-title" style="font-size:22px; margin-top:8px;">Pulling your usual.</h2>
+            <p class="h-sub" style="margin-top:-4px;">Anything to change today?</p>
+
+            <div class="card" style="display:flex; gap:10px; align-items:center; padding:10px;">
+              <div class="placeholder-img" style="width:54px; height:54px; border-radius:8px; font-size:9px;">drink</div>
+              <div style="flex:1; font-family:'Inter'; font-size:12px; line-height:1.3;">
+                <b>Large coffee</b>, 2 cream 2 sugar<br/>
+                <span class="ui-mute">Breakfast wrap · hash brown</span>
+              </div>
+            </div>
+
+            <div class="h-eyebrow" style="color:var(--ink-soft); margin-top:4px;">Quick swaps</div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div class="card soft" style="padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:12px;"><span>Switch to <b>iced coffee</b></span><span style="color:var(--accent); font-weight:700;">›</span></div>
+              <div class="card soft" style="padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:12px;"><span>Swap wrap for <b>filled donut</b></span><span style="color:var(--accent); font-weight:700;">›</span></div>
+              <div class="card soft" style="padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:12px;"><span>Add a <b>hash brown</b></span><span style="color:var(--accent); font-weight:700;">+</span></div>
+            </div>
+
+            <div style="margin-top:auto; display:flex; flex-direction:column; gap:6px;">
+              <div class="btn primary" style="padding:13px; font-size:14px;">Keep it · order now</div>
+              <div class="link" style="font-size:12px;">Skip today (refund this morning)</div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+
+      <div class="ann" style="top: 240px; right: -180px; width: 170px;">
+        <span class="arr">↙</span>
+        Geofence is the killer moment — no app open needed.
+      </div>
+      <div class="ann" style="bottom: 80px; right: -180px; width: 180px;">
+        <span class="arr">↖</span>
+        Countdown bar = gentle urgency, not stressful. Auto-keeps usual on timeout.
+      </div>
+    </div>
+
+    <!-- arrow 6→7 -->
+    <div class="flow-arrow" style="top: 460px; left: 1830px;">
+      <svg width="50" height="20" viewBox="0 0 50 20" fill="none">
+        <path d="M2 10 Q 25 4 46 10 M40 5 L48 10 L40 15" stroke="oklch(64% 0.16 38)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">walk in</span>
+    </div>
+
+    <!-- 07 PICKUP -->
+    <div class="screen">
+      <div class="screen-label"><span class="n">07</span> Pickup confirmation</div>
+      <div class="screen-blurb">Walks-in screen. Big emotional hero, scannable code, Express Lane signpost.</div>
+      <div class="phone">
+        <div class="statusbar"><span>8:14</span><span class="right">●●● ▮</span></div>
+        <div class="scr" style="padding-top: 24px;">
+          <div class="topbar"><span class="back">←</span><span style="color:var(--accent); font-weight:700;">● READY</span><span class="dots">···</span></div>
+
+          <div class="h-eyebrow">Order #B42</div>
+          <h2 class="h-serif" style="font-size:42px;">Ready for you,<br/>Sandra.</h2>
+          <p class="h-sub" style="margin-top:-4px;">Walk past the line. Show this at the counter.</p>
+
+          <div class="card acc" style="display:flex; gap:10px; align-items:center; padding:12px;">
+            <div style="width:36px; height:36px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Inter'; font-weight:700;">→</div>
+            <div style="flex:1;">
+              <div class="ui-text" style="font-weight:700; font-size:13px;">Express Lane open</div>
+              <div class="ui-text ui-mute" style="font-size:11px;">skip the cashier — scan &amp; go</div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:center; margin: 6px 0 4px;">
+            <div class="qr"></div>
+          </div>
+          <div style="text-align:center; font-family:'Inter'; font-size:11px; letter-spacing:3px; color:var(--ink-soft);">ORDER · B42 · TUE 8:14</div>
+
+          <div class="card" style="padding: 12px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; font-family:'Inter'; font-size:12px;"><span>Large coffee · 2 cream 2 sugar</span><span class="ui-mute">incl.</span></div>
+            <div style="display:flex; justify-content:space-between; font-family:'Inter'; font-size:12px;"><span>Breakfast wrap</span><span class="ui-mute">incl.</span></div>
+            <div style="display:flex; justify-content:space-between; font-family:'Inter'; font-size:12px; padding-top:6px; border-top:1px dashed rgba(42,36,29,0.2);"><b>Covered by TimBot</b><b style="color:var(--accent);">$0.00</b></div>
+          </div>
+
+          <div style="margin-top:auto;" class="card soft">
+            <div class="ui-text" style="font-size:13px; font-weight:600; margin-bottom:6px;">Rate your morning</div>
+            <div style="display:flex; gap:6px;">
+              <div class="chip" style="flex:1; justify-content:center;">😐 meh</div>
+              <div class="chip" style="flex:1; justify-content:center;">🙂 good</div>
+              <div class="chip acc" style="flex:1; justify-content:center;">🤩 ritual</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="ann" style="top: 220px; right: -180px; width: 170px;">
+        <span class="arr">↙</span>
+        Serif hero — second emotional moment (matches screen 01).
+      </div>
+      <div class="ann" style="top: 450px; right: -180px; width: 170px;">
+        <span class="arr">↙</span>
+        Express Lane callout makes the speed promise <b style="color:var(--ink)">visible</b>.
+      </div>
+      <div class="ann" style="bottom: 80px; right: -180px; width: 170px;">
+        <span class="arr">↖</span>
+        Optional rating — quick chip tap, dismissible.
+      </div>
+    </div>
+  </div>
+
+  <!-- footer notes -->
+  <div class="footer-note">
+    <b>Open questions for the next round →</b>
+    What happens when Sandra is sick or skips? · Auto-pause after N misses? · How do we handle store-out-of-stock at trigger time (graceful fallback or push to swap?) · 
+    Tier pricing is placeholder math — needs finance pass · 
+    Onboarding-to-first-order: do we need a "tomorrow's preview" confirmation screen between 04 and 05? · 
+    Geofence radius: ~10 min driving vs. walking from GO Train — different stores need different radii.
+  </div>
+
+</div>
+
+<!-- mobile-only review chrome -->
+<div class="mobile-pager" id="mobile-pager">1 / 7</div>
+<div class="mobile-hint" id="mobile-hint">↑ swipe ↑</div>
+
+<script>
+  // ——— Mobile review mode: scale each screen's stage to fit viewport ———
+  (function () {
+    const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+
+    function fitMobile() {
+      const screens = document.querySelectorAll('.screen');
+      if (!isMobile()) {
+        screens.forEach((s) => s.style.removeProperty('--m-scale'));
+        return;
+      }
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const availW = vw - 24;
+      const availH = vh - 110; // top label + bottom pager
+      screens.forEach((screen) => {
+        const stage = screen.querySelector(':scope > .phone-stage') ||
+                      screen.querySelector(':scope > .phone');
+        if (!stage) return;
+        const naturalW = stage.classList.contains('phone-stage') ? (290 * 2 + 14) : 390;
+        const naturalH = stage.classList.contains('phone-stage') ? 628 : 844;
+        const scale = Math.min(availW / naturalW, availH / naturalH, 1);
+        screen.style.setProperty('--m-scale', scale.toFixed(3));
+      });
+    }
+
+    // ——— Pager: track which screen is in view ———
+    const pager = document.getElementById('mobile-pager');
+    const hint = document.getElementById('mobile-hint');
+    let hintHidden = false;
+    function updatePager() {
+      if (!isMobile()) return;
+      const screens = [...document.querySelectorAll('.screen')];
+      const vhCenter = window.scrollY + window.innerHeight / 2;
+      let active = 0;
+      screens.forEach((s, i) => {
+        const top = s.offsetTop;
+        const bot = top + s.offsetHeight;
+        if (vhCenter >= top && vhCenter < bot) active = i;
+      });
+      pager.textContent = (active + 1) + ' / ' + screens.length;
+      if (!hintHidden && active > 0) {
+        hint.classList.add('hide');
+        hintHidden = true;
+      }
+    }
+
+    let raf;
+    function onScroll() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(updatePager);
+    }
+
+    fitMobile();
+    updatePager();
+    window.addEventListener('resize', () => { fitMobile(); updatePager(); });
+    window.addEventListener('orientationchange', () => setTimeout(() => { fitMobile(); updatePager(); }, 200));
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Auto-hide hint after 4s regardless
+    setTimeout(() => { hint.classList.add('hide'); hintHidden = true; }, 4000);
+  })();
+
+  // ——— Service Worker registration ———
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {
+        // SW won't register on file:// — that's fine for local preview.
+      });
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+# TimBot — Netlify config
+# Static site, no build step. Just publishes this folder.
+
+[build]
+  publish = "."
+
+# Correct MIME for PWA manifest (some Netlify edges miss it)
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Service worker must be served fresh + scoped to root
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# Long-cache icons (filename changes => break the cache)
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# HTML always fresh, SW handles offline fallback
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Sensible defaults
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Hash-routing SPA — no rewrites needed, but keep wireframe accessible
+[[redirects]]
+  from = "/wireframe"
+  to = "/wireframe.html"
+  status = 200
