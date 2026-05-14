@@ -1533,10 +1533,18 @@
 
   function createUser(name) {
     const id = newUserId();
-    const initials = (name.trim().split(/\s+/).map(s => s[0]).join('').slice(0, 2) || 'U').toUpperCase();
+    const cleanName = (name || '').trim();
+    let initials;
+    if (cleanName) {
+      initials = (cleanName.split(/\s+/).map(s => s[0]).join('').slice(0, 2) || 'U').toUpperCase();
+    } else {
+      // No name → sequential letter (A, B, C…) so multiple profiles stay distinguishable.
+      const existingCount = Object.keys(state.users).length;
+      initials = String.fromCharCode(65 + (existingCount % 26));
+    }
     state.users[id] = {
       id,
-      name: name.trim(),
+      name: cleanName,
       initials,
       color: pickAvatarColor(),
       createdAt: Date.now(),
@@ -1552,6 +1560,32 @@
     state.currentUserId = id;
     saveState();
     return state.users[id];
+  }
+
+  // Helpers for rendering a friendly label when the user hasn't set a name.
+  function firstName(u) {
+    return u && u.name ? u.name.split(/\s+/)[0] : '';
+  }
+  function displayName(u) {
+    if (!u) return 'Profile';
+    if (u.name) return u.name;
+    const sorted = Object.values(state.users).sort((a, b) => a.createdAt - b.createdAt);
+    const idx = sorted.findIndex(other => other.id === u.id);
+    return `Profile ${idx + 1}`;
+  }
+
+  // Update u.name (and derive new initials) — used by the inline rename in settings.
+  function renameUser(u, newName) {
+    const clean = (newName || '').trim();
+    u.name = clean;
+    if (clean) {
+      u.initials = (clean.split(/\s+/).map(s => s[0]).join('').slice(0, 2) || 'U').toUpperCase();
+    } else {
+      const sorted = Object.values(state.users).sort((a, b) => a.createdAt - b.createdAt);
+      const idx = sorted.findIndex(other => other.id === u.id);
+      u.initials = String.fromCharCode(65 + (idx % 26));
+    }
+    saveState();
   }
 
   function deleteUser(id) {
@@ -1819,7 +1853,7 @@
       if (currentRoute.view === 'home') {
         render();
       } else {
-        toast(`Your order is ready, ${cu.name.split(' ')[0]} ☕`, '●');
+        toast(firstName(cu) ? `Your order is ready, ${firstName(cu)} ☕` : 'Your order is ready ☕', '●');
       }
     }, remaining);
   }
@@ -1883,7 +1917,7 @@
         });
         row.appendChild(h('div', { class: 'avatar', style: { background: u.color } }, u.initials));
         row.appendChild(h('div', { class: 'info' },
-          h('div', { class: 'nm' }, u.name),
+          h('div', { class: 'nm' }, displayName(u)),
           h('div', { class: 'meta' }, u.onboarded ? `${u.plan || '?'} mornings/wk · ${u.store?.split(',')[0] || ''}` : 'Setup in progress…')
         ));
         row.appendChild(h('span', { class: 'chev' }, '›'));
@@ -1897,7 +1931,12 @@
     const footer = h('div', { class: 'footer-cta' });
     footer.appendChild(h('button', {
       class: 'btn primary',
-      onclick: () => navigate('signup', {}, { transition: 'right' })
+      onclick: () => {
+        // Auto-create a nameless profile and jump straight into onboarding.
+        // The user can set a name later from Settings if they want one.
+        createUser('');
+        navigate('onboard1', {}, { transition: 'right' });
+      }
     }, users.length ? 'Add another profile' : 'Set up TimBot →'));
     // Reset link — only shown once there's data to clear
     if (users.length > 0) {
@@ -1913,53 +1952,6 @@
     }
     view.appendChild(footer);
 
-    return view;
-  };
-
-  // ---- SIGNUP ----
-  views.signup = () => {
-    const view = h('div', { class: 'view' });
-    view.appendChild(statusBar());
-    view.appendChild(topBar({ back: () => navigate('welcome', {}, { transition: 'left' }), title: 'Create profile' }));
-
-    const content = h('div', { class: 'view-scroll pad col gap-16' });
-    content.appendChild(h('h1', { class: 'title' }, 'What should we call you?'));
-    content.appendChild(h('p', { class: 'sub' }, "This profile is private to your browser. It's how you'll see your usual on the dashboard."));
-
-    const field = h('div', { class: 'field mt-12' });
-    field.appendChild(h('label', { class: 'input-label' }, 'Your name'));
-    const input = h('input', {
-      class: 'input',
-      type: 'text',
-      autocomplete: 'given-name',
-      placeholder: 'e.g. Sandra',
-      maxlength: 40
-    });
-    field.appendChild(input);
-    content.appendChild(field);
-
-    const errBox = h('div', { class: 'small', style: { color: 'var(--accent)', minHeight: '20px' } });
-    content.appendChild(errBox);
-
-    view.appendChild(content);
-
-    const footer = h('div', { class: 'footer-cta' });
-    const submit = () => {
-      const name = input.value.trim();
-      if (name.length < 2) {
-        errBox.textContent = 'Please enter at least 2 characters.';
-        input.focus();
-        return;
-      }
-      createUser(name);
-      toast(`Hi ${name.split(' ')[0]} 👋`);
-      navigate('onboard1', {}, { transition: 'right' });
-    };
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-    footer.appendChild(h('button', { class: 'btn primary', onclick: submit }, 'Continue →'));
-    view.appendChild(footer);
-
-    setTimeout(() => input.focus(), 80);
     return view;
   };
 
@@ -2564,7 +2556,11 @@
     const burst = h('div', { style: { fontSize: '90px', marginBottom: '10px' }, class: 'pop-in' }, '🎉');
     content.appendChild(burst);
 
-    content.appendChild(h('h1', { class: 'serif lg center', style: { textAlign: 'center' } }, "You're all set,", h('br'), u.name.split(' ')[0] + '.'));
+    content.appendChild(h('h1', { class: 'serif lg center', style: { textAlign: 'center' } },
+      firstName(u) ? "You're all set," : "You're all set.",
+      firstName(u) ? h('br') : null,
+      firstName(u) ? firstName(u) + '.' : null
+    ));
     content.appendChild(h('p', { class: 'sub center' }, "TimBot will run tomorrow morning. Want to see what the day-of looks like? Try a live preview now."));
 
     const summary = h('div', { class: 'card mt-16', style: { width: '100%' } },
@@ -2635,7 +2631,7 @@
     content.appendChild(h('div', { class: 'flex between center-y' },
       h('div', null,
         h('div', { class: 'eyebrow mute' }, fmtDayDate()),
-        h('h2', { class: 'title', style: { fontSize: '24px', margin: '4px 0 0' } }, `Good morning, ${u.name.split(' ')[0]}`)
+        h('h2', { class: 'title', style: { fontSize: '24px', margin: '4px 0 0' } }, firstName(u) ? `Good morning, ${firstName(u)}` : 'Good morning')
       ),
       h('button', {
         class: 'avatar',
@@ -2738,7 +2734,7 @@
         sub: `We pulled your usual just now. Ready when you walk in.`
       },
       ready: {
-        title: `Ready for you, ${u.name.split(' ')[0]}.`,
+        title: firstName(u) ? `Ready for you, ${firstName(u)}.` : 'Ready for pickup.',
         sub: `Order #${order.orderNum}. Walk past the line — show the QR at the counter.`
       },
       picked: {
@@ -3135,11 +3131,24 @@
 
     const content = h('div', { class: 'view-scroll pad col gap-16' });
 
-    // profile
-    const profile = h('div', { class: 'card flex center-y gap-12', style: { padding: '14px' } },
+    // profile — tap-to-rename via native prompt
+    const profile = h('div', {
+      class: 'card card-press flex center-y gap-12',
+      style: { padding: '14px', cursor: 'pointer' },
+      onclick: () => {
+        const next = prompt('Your name (leave blank to clear):', u.name || '');
+        if (next !== null) {
+          renameUser(u, next);
+          navigate('settings', {}, { transition: 'fade' });
+        }
+      }
+    },
       h('div', { class: 'avatar lg', style: { background: u.color } }, u.initials),
-      h('div', { style: { flex: '1' } },
-        h('div', { style: { fontWeight: '700', fontSize: '17px' } }, u.name),
+      h('div', { style: { flex: '1', minWidth: '0' } },
+        h('div', { class: 'flex center-y gap-8' },
+          h('div', { style: { fontWeight: '700', fontSize: '17px' } }, displayName(u)),
+          h('span', { class: 'tiny mute' }, '✏️')
+        ),
         h('div', { class: 'small mute' }, `Member since ${MONTH_NAMES[new Date(u.createdAt).getMonth()]} ${new Date(u.createdAt).getFullYear()}`),
         h('div', { class: 'small mt-4' },
           h('span', { class: 'badge dark', style: { fontSize: '9px' } }, `${u.plan} MORNINGS/WK`)
@@ -3165,7 +3174,7 @@
     content.appendChild(dz);
 
     content.appendChild(h('button', { class: 'btn danger', onclick: () => {
-      if (confirm(`Delete profile for ${u.name}? This wipes all of their data on this browser.`)) {
+      if (confirm(`Delete ${displayName(u)}? This wipes all of their data on this browser.`)) {
         deleteUser(u.id);
         toast('Profile deleted.', '🗑');
         navigate('welcome', {}, { transition: 'left' });
