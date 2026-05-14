@@ -3013,20 +3013,16 @@
       h('span', { style: { fontWeight: '600', color: 'var(--ink-mute)', textDecoration: 'line-through' } }, '$' + subtotal.toFixed(2))
     ));
 
-    // "You pay" — the actual cost, in red so it reads as money out
+    // "You pay" — the actual cost. Bold, neutral ink so it reads as
+    // important without competing with the green "You save" hero below.
     card.appendChild(h('div', {
       class: 'flex between center-y',
-      style: {
-        padding: '10px 12px',
-        marginTop: '6px',
-        background: 'var(--pay-soft)',
-        borderRadius: '10px'
-      }
+      style: { padding: '6px 0', marginTop: '2px' }
     },
-      h('span', { style: { fontWeight: '700', fontSize: '14px', color: 'var(--pay)' } }, 'You pay'),
-      h('span', { style: { fontWeight: '800', fontSize: '17px', color: 'var(--pay)' } },
+      h('span', { style: { fontWeight: '700', fontSize: '14px', color: 'var(--ink)' } }, 'You pay'),
+      h('span', { style: { fontWeight: '800', fontSize: '17px', color: 'var(--ink)' } },
         '$' + bundle.toFixed(2),
-        h('span', { style: { fontSize: '12px', fontWeight: '600', marginLeft: '2px' } }, '/wk')
+        h('span', { style: { fontSize: '12px', fontWeight: '600', marginLeft: '2px', color: 'var(--ink-soft)' } }, '/wk')
       )
     ));
 
