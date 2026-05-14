@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>TimBot — Skip the line. Keep the ritual.</title>
+<title>TimBot — Smooth morning commutes start at Tims.</title>
 <meta name="description" content="TimBot — commuter auto-order. Pre-pay your week, order pulls itself when you're 10 minutes out." />
 <meta name="theme-color" content="#c25a30" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-<meta property="og:title" content="TimBot — Skip the line. Keep the ritual." />
+<meta property="og:title" content="TimBot — Smooth morning commutes start at Tims." />
 <meta property="og:description" content="Commuter auto-order prototype. Try the flow." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="icons/icon-512.png" />
@@ -964,6 +964,23 @@
     100% { opacity: 0; transform: translateY(400px) rotate(720deg); }
   }
 
+  /* ===== Brand-logo placeholder (welcome view) =====
+     [BRAND-LOGO] — swap the welcome-view <div class="brand-logo"> markup
+     for the official Tim Hortons SVG/PNG asset before launch. This is a
+     generic text placeholder rendered in their brand red. */
+  .brand-logo {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    color: #c8102e;
+    text-align: center;
+    padding: 4px 0 2px;
+    user-select: none;
+  }
+
   /* ===== Plan pill (onboard3 plan selector) ===== */
   .plan-pill {
     flex: 1;
@@ -1275,7 +1292,7 @@
   <div class="desktop-label">
     <span class="stamp">prototype</span>
     <br/>
-    Skip the line. Keep the ritual. Pre-pay your week, your order pulls itself when you're 10 minutes out.
+    Smooth morning commutes start at Tims. Pre-pay your week, your order pulls itself when you're 10 minutes out.
   </div>
   <div class="phone-frame">
     <div id="app"></div>
@@ -1432,6 +1449,21 @@
       state.currentUserId = id;
       saveState();
     }
+  }
+
+  // Wipes every profile + saved state, clears any pending timers,
+  // notifies other tabs, and re-renders the welcome screen.
+  function resetEverything() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    if (preparingTimer) { clearTimeout(preparingTimer); preparingTimer = null; }
+    state = { users: {}, currentUserId: null, seenWelcome: false };
+    if (channel) {
+      try { channel.postMessage({ type: 'state-update', from: clientId }); } catch (e) {}
+    }
+    currentRoute = { view: 'welcome', params: {} };
+    transition = 'fade';
+    render();
+    toast('Demo reset — fresh start', '↺');
   }
 
   // ----------------------------------------------------------------
@@ -1698,11 +1730,19 @@
 
     const content = h('div', { class: 'view-scroll pad', style: { display: 'flex', flexDirection: 'column', gap: '14px' } });
 
-    content.appendChild(h('div', { style: { marginTop: '20px' }, class: 'eyebrow' }, 'Introducing TimBot'));
+    // [BRAND-LOGO] — swap this <div> for the official Tim Hortons SVG/PNG asset
+    // before going live. Placeholder wordmark in brand red, sized to match.
+    content.appendChild(h('div', {
+      class: 'brand-logo',
+      'aria-label': 'Tim Hortons',
+      style: { marginTop: '8px' }
+    }, 'Tim Hortons'));
+
+    content.appendChild(h('div', { class: 'eyebrow', style: { marginTop: '6px' } }, 'Introducing TimBot'));
 
     const hero = h('div', {
       style: {
-        height: '220px',
+        height: '200px',
         borderRadius: '20px',
         background: 'linear-gradient(155deg, #fef0d8 0%, #f4c89b 50%, #c25a30 100%)',
         display: 'flex',
@@ -1710,7 +1750,7 @@
         justifyContent: 'center',
         position: 'relative',
         overflow: 'hidden',
-        marginBottom: '8px'
+        marginBottom: '4px'
       }
     });
     hero.innerHTML = `
@@ -1720,7 +1760,7 @@
     `;
     content.appendChild(hero);
 
-    content.appendChild(h('h2', { class: 'serif lg' }, 'Skip the line.', h('br'), 'Keep the ritual.'));
+    content.appendChild(h('h2', { class: 'serif lg' }, 'Smooth morning', h('br'), 'commutes start at Tims.'));
     content.appendChild(h('p', { class: 'sub' },
       "Pre-pay your week. Your order pulls itself when you're 10 minutes out. Walk in, walk out."
     ));
@@ -1757,6 +1797,18 @@
       class: 'btn primary',
       onclick: () => navigate('signup', {}, { transition: 'right' })
     }, users.length ? 'Add another profile' : 'Set up TimBot →'));
+    // Reset link — only shown once there's data to clear
+    if (users.length > 0) {
+      footer.appendChild(h('button', {
+        class: 'link',
+        style: { color: 'var(--ink-mute)', fontSize: '12px' },
+        onclick: () => {
+          if (confirm('Reset the demo? This wipes every profile and the saved state on this browser.')) {
+            resetEverything();
+          }
+        }
+      }, '↺  Reset demo (clears all profiles)'));
+    }
     view.appendChild(footer);
 
     return view;
