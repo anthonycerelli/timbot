@@ -803,117 +803,34 @@
   .toast.in { opacity: 1; transform: translateY(0); }
   .toast .ico { font-size: 18px; }
 
-  /* ===== Demo panel (floating) ===== */
-  #demo-fab {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    width: 50px; height: 50px;
-    border-radius: 50%;
-    background: var(--ink);
-    color: #fff8e8;
+  /* ===== User row (welcome / settings) ===== */
+  .user-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    box-shadow: var(--shadow-lift);
-    z-index: 8000;
-    cursor: pointer;
-    border: 2px solid var(--paper);
-    transition: transform 0.15s;
-  }
-  #demo-fab:hover { transform: scale(1.05); }
-  #demo-fab:active { transform: scale(0.95); }
-  #demo-fab::before { content: "✦"; }
-
-  #demo-panel {
-    position: fixed;
-    top: 0; right: 0; bottom: 0;
-    width: 100%;
-    max-width: 360px;
-    background: var(--paper);
-    box-shadow: -10px 0 40px rgba(42, 36, 29, 0.2);
-    z-index: 9100;
-    transform: translateX(100%);
-    transition: transform 0.3s ease-out;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  #demo-panel.open { transform: translateX(0); }
-  .demo-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(42, 36, 29, 0.4);
-    z-index: 9050;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-  }
-  .demo-backdrop.open { opacity: 1; pointer-events: auto; }
-  .demo-header {
-    padding: max(env(safe-area-inset-top), 18px) 22px 14px;
-    border-bottom: 1px solid var(--ink-faint);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .demo-header h3 {
-    margin: 0;
-    font-family: 'Caveat', cursive;
-    font-weight: 700;
-    font-size: 26px;
-    color: var(--ink);
-  }
-  .demo-header h3 .acc { color: var(--accent); }
-  .demo-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 22px max(env(safe-area-inset-bottom), 22px);
-  }
-  .demo-section {
-    margin-bottom: 22px;
-  }
-  .demo-section h4 {
-    margin: 0 0 8px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-  }
-  .demo-user-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 12px;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
     background: var(--paper-card);
     margin-bottom: 6px;
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    min-height: 56px;
   }
-  .demo-user-row:hover { background: var(--paper-2); }
-  .demo-user-row:active { transform: scale(0.99); }
-  .demo-user-row.active {
+  .user-row:hover { background: var(--paper-2); box-shadow: var(--shadow-card); }
+  .user-row:active { transform: scale(0.99); }
+  .user-row.active {
     background: var(--accent-soft);
     border: 1.5px solid var(--accent-edge);
-    padding: 8px 10px;
+    padding: 10px 12px;
   }
-  .demo-user-row .info { flex: 1; min-width: 0; }
-  .demo-user-row .info .nm { font-weight: 600; font-size: 14px; }
-  .demo-user-row .info .meta { font-size: 11px; color: var(--ink-soft); }
-  .demo-user-row .del {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .user-row .info { flex: 1; min-width: 0; }
+  .user-row .info .nm { font-weight: 600; font-size: 15px; line-height: 1.2; }
+  .user-row .info .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .user-row .chev {
     color: var(--ink-mute);
-    font-size: 14px;
+    font-size: 22px;
+    line-height: 1;
   }
-  .demo-user-row .del:hover { background: var(--ink-faint); color: var(--accent); }
 
   /* ===== Animations ===== */
   .view-enter {
@@ -1067,27 +984,192 @@
   .grow { flex: 1; }
   .small { font-size: 12px; }
   .tiny { font-size: 11px; }
+
+  /* =================================================================
+     MOBILE — refinements for phones in browser + installed PWA
+     ================================================================= */
+  @media (max-width: 759px) {
+    html, body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior-y: none;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      /* Disable iOS bounce / pull-to-refresh outside the scroll containers */
+      position: fixed;
+      inset: 0;
+      width: 100%;
+    }
+
+    .desktop-frame {
+      padding: 0;
+      gap: 0;
+      min-height: 100svh;
+      align-items: stretch;
+    }
+
+    /* Hide simulated status bar on phones — the OS already shows one.
+       Keep it on the lockscreen preview (intentional design). */
+    .view:not(.lockscreen-bg) > .statusbar { display: none; }
+
+    /* When the simulated status bar is hidden, route the safe-area inset
+       to the topbar / pad-top instead. */
+    .view:not(.lockscreen-bg) > .topbar {
+      padding-top: max(env(safe-area-inset-top), 12px);
+    }
+    .view:not(.lockscreen-bg) > .pad,
+    .view:not(.lockscreen-bg) > .view-scroll:first-of-type {
+      padding-top: max(env(safe-area-inset-top), 14px);
+    }
+    .view:not(.lockscreen-bg) > .topbar + .progress {
+      padding-top: 4px;
+    }
+    .view:not(.lockscreen-bg) > .topbar + .view-scroll {
+      padding-top: 8px;
+    }
+
+    /* Slightly more breathing room on the headings */
+    h1.title { font-size: 30px; }
+    h2.title { font-size: 24px; }
+    .serif.lg { font-size: 40px; }
+    .serif.xl { font-size: 46px; }
+
+    /* Bigger, friendlier touch targets */
+    .iconbtn {
+      width: 44px; height: 44px;
+      font-size: 20px;
+    }
+    .chip {
+      padding: 11px 16px;
+      font-size: 14px;
+      min-height: 40px;
+    }
+    .chip.sm {
+      padding: 9px 14px;
+      font-size: 13px;
+      min-height: 36px;
+    }
+    .btn {
+      padding: 16px 18px;
+      font-size: 16px;
+      border-radius: 16px;
+    }
+    .btn.sm {
+      padding: 12px 14px;
+      font-size: 14px;
+      border-radius: 12px;
+      min-height: 44px;
+    }
+    .link { padding: 10px; font-size: 14px; min-height: 40px; }
+    .input { padding: 16px; font-size: 17px; border-radius: 16px; }
+
+    /* Slightly softer cards on small screens */
+    .card { border-radius: 18px; }
+    .card.lift { box-shadow: 0 4px 10px rgba(42, 36, 29, 0.06), 0 12px 24px rgba(42, 36, 29, 0.08); }
+
+    /* Larger tap area on day cells and tiles */
+    .day { aspect-ratio: 1 / 1.15; }
+    .tile { aspect-ratio: 1 / 0.92; padding: 12px; }
+    .tile .emoji { font-size: 32px; }
+    .tile .name { font-size: 13px; }
+
+    /* Footer CTA: native-feel sticky pad with translucent blur */
+    .footer-cta {
+      padding: 12px 20px max(env(safe-area-inset-bottom), 16px);
+      background: linear-gradient(180deg, rgba(244, 237, 224, 0) 0%, rgba(244, 237, 224, 0.96) 30%, var(--paper) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Smoother snappier active states for tap-heavy controls */
+    .chip:active, .tile:active, .day:active, .tier:active,
+    .card-press:active, .user-row:active, .setting-row.card-press:active {
+      transform: scale(0.97);
+    }
+
+    /* iOS-style spring transitions */
+    .view-enter {
+      animation: slideInRightSpring 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.05) forwards;
+    }
+    .view-enter-back {
+      animation: slideInLeftSpring 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.05) forwards;
+    }
+    .view-enter-up {
+      animation: slideInUpSpring 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .view-enter-fade {
+      animation: fadeIn 0.22s ease-out forwards;
+    }
+
+    /* Toast: anchored above home indicator */
+    #toast-rail {
+      bottom: max(env(safe-area-inset-bottom), 16px);
+      max-width: calc(100% - 28px);
+    }
+
+    /* Lock screen: full-bleed, fade in time */
+    .lockscreen-bg .lock-time {
+      font-size: 84px;
+      margin-top: 50px;
+    }
+
+    /* The phone-frame "border" is desktop-only; on mobile let it fill */
+    .phone-frame {
+      border-radius: 0 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+    .phone-frame::before { display: none !important; }
+  }
+
+  @keyframes slideInRightSpring {
+    0%   { transform: translateX(100%); opacity: 0.7; }
+    60%  { transform: translateX(-2%);  opacity: 1; }
+    100% { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes slideInLeftSpring {
+    0%   { transform: translateX(-100%); opacity: 0.7; }
+    60%  { transform: translateX(2%);    opacity: 1; }
+    100% { transform: translateX(0);     opacity: 1; }
+  }
+  @keyframes slideInUpSpring {
+    0%   { transform: translateY(100%); }
+    100% { transform: translateY(0); }
+  }
+
+  /* Respect users who prefer less motion */
+  @media (prefers-reduced-motion: reduce) {
+    .view-enter, .view-enter-back, .view-enter-up, .view-enter-fade,
+    .pop-in, .confetti, .badge .dot, .state-pill.preparing .dot {
+      animation: none !important;
+    }
+    * { transition-duration: 0.05s !important; }
+  }
+
+  /* Larger phones get a touch more padding */
+  @media (min-width: 380px) and (max-width: 759px) {
+    .pad { padding: 18px 24px 28px; }
+    .footer-cta { padding-left: 24px; padding-right: 24px; }
+  }
 </style>
 </head>
 <body>
 
 <div class="desktop-frame">
   <div class="desktop-label">
-    <span class="stamp">live demo</span>
+    <span class="stamp">prototype</span>
     <br/>
-    TimBot prototype — click "✦" anytime to switch users, simulate the geofence push, or jump between states.
+    Skip the line. Keep the ritual. Pre-pay your week, your order pulls itself when you're 10 minutes out.
   </div>
   <div class="phone-frame">
     <div id="app"></div>
   </div>
   <div class="desktop-label" style="text-align: left;">
-    Multi-user → state lives in <b>your browser only</b>. Anyone else opening the link gets their own clean session.
+    Frontend-only — each browser gets its own clean profile. Add it to your home screen for the full PWA experience.
   </div>
 </div>
 
-<button id="demo-fab" aria-label="Demo controls"></button>
-<div class="demo-backdrop" id="demo-backdrop"></div>
-<aside id="demo-panel" aria-label="Demo control panel"></aside>
 <div id="toast-rail"></div>
 
 <script>
@@ -1246,8 +1328,8 @@
       channel.onmessage = (e) => {
         if (e.data && e.data.from !== clientId && e.data.type === 'state-update') {
           loadState();
+          schedulePreparingAdvance();
           render();
-          renderDemoPanel();
         }
       };
     } catch (e) {}
@@ -1255,8 +1337,8 @@
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY) {
       loadState();
+      schedulePreparingAdvance();
       render();
-      renderDemoPanel();
     }
   });
 
@@ -1428,17 +1510,50 @@
     saveState();
   }
 
+  // Auto-progresses preparing → ready (demo timing)
+  const PREPARING_TO_READY_MS = 6000;
+  let preparingTimer = null;
+
   function transitionOrder(toState) {
     const u = currentUser();
     if (!u || !u.currentOrder) {
       startTodayOrder(toState);
+      schedulePreparingAdvance();
       return;
     }
     u.currentOrder.state = toState;
+    if (toState === 'preparing') {
+      u.currentOrder.preparingStartedAt = Date.now();
+    }
     if (toState === 'picked' || toState === 'skipped') {
       u.currentOrder.completedAt = Date.now();
     }
+    if (preparingTimer) { clearTimeout(preparingTimer); preparingTimer = null; }
     saveState();
+    schedulePreparingAdvance();
+  }
+
+  function schedulePreparingAdvance() {
+    const u = currentUser();
+    if (!u || !u.currentOrder || u.currentOrder.state !== 'preparing') return;
+    if (!u.currentOrder.preparingStartedAt) {
+      u.currentOrder.preparingStartedAt = Date.now();
+      saveState();
+    }
+    const remaining = Math.max(0, PREPARING_TO_READY_MS - (Date.now() - u.currentOrder.preparingStartedAt));
+    if (preparingTimer) clearTimeout(preparingTimer);
+    preparingTimer = setTimeout(() => {
+      preparingTimer = null;
+      const cu = currentUser();
+      if (!cu || !cu.currentOrder || cu.currentOrder.state !== 'preparing') return;
+      cu.currentOrder.state = 'ready';
+      saveState();
+      if (currentRoute.view === 'home') {
+        render();
+      } else {
+        toast(`Your order is ready, ${cu.name.split(' ')[0]} ☕`, '●');
+      }
+    }, remaining);
   }
 
   function archiveCurrentOrder(rating) {
@@ -1500,8 +1615,8 @@
       usersCard.appendChild(h('div', { class: 'eyebrow mute', style: { marginBottom: '10px' } }, 'Continue as'));
       users.sort((a, b) => b.createdAt - a.createdAt).slice(0, 4).forEach(u => {
         const row = h('div', {
-          class: 'demo-user-row',
-          style: { background: 'transparent', padding: '8px 4px', marginBottom: '0' },
+          class: 'user-row',
+          style: { background: 'transparent', marginBottom: '0' },
           onclick: () => {
             switchUser(u.id);
             navigate(u.onboarded ? 'home' : 'onboard1', {}, { transition: 'right' });
@@ -1512,7 +1627,7 @@
           h('div', { class: 'nm' }, u.name),
           h('div', { class: 'meta' }, u.onboarded ? `${u.plan || '?'} mornings/wk · ${u.store?.split(',')[0] || ''}` : 'Setup in progress…')
         ));
-        row.appendChild(h('span', { style: { color: 'var(--accent)', fontSize: '20px' } }, '›'));
+        row.appendChild(h('span', { class: 'chev' }, '›'));
         usersCard.appendChild(row);
       });
       content.appendChild(usersCard);
@@ -2196,6 +2311,34 @@
       ));
     }
 
+    // Preview affordance for scheduled state — replaces what the demo panel offered
+    if (order.state === 'scheduled') {
+      card.appendChild(h('button', {
+        class: 'btn primary sm mt-8',
+        onclick: () => navigate('lock', {}, { transition: 'fade' })
+      }, '▶  Preview my morning push'));
+    }
+
+    // Live progress indicator while preparing — animates to "ready"
+    if (order.state === 'preparing') {
+      const elapsed = Date.now() - (order.preparingStartedAt || Date.now());
+      const remaining = Math.max(0, PREPARING_TO_READY_MS - elapsed);
+      const startPct = Math.min(100, Math.max(4, (elapsed / PREPARING_TO_READY_MS) * 100));
+      const fillEl = h('div', {
+        class: 'fill',
+        style: { width: startPct + '%', transition: `width ${remaining}ms linear` }
+      });
+      const progressWrap = h('div', { class: 'mt-12' },
+        h('div', { class: 'flex between center-y', style: { marginBottom: '6px' } },
+          h('span', { class: 'tiny mute' }, 'Heading to ' + (u.store?.split(',')[0] || 'pickup')),
+          h('span', { class: 'tiny', style: { color: 'var(--accent)', fontWeight: '700' } }, 'ready in a moment →')
+        ),
+        h('div', { class: 'countdown-bar' }, fillEl)
+      );
+      card.appendChild(progressWrap);
+      requestAnimationFrame(() => { fillEl.style.width = '100%'; });
+    }
+
     if (order.state === 'skipped') {
       card.appendChild(h('button', { class: 'btn ghost sm mt-12', onclick: () => {
         startTodayOrder('scheduled');
@@ -2583,229 +2726,10 @@
   }
 
   // ----------------------------------------------------------------
-  // DEMO PANEL
-  // ----------------------------------------------------------------
-  const demoBackdrop = document.getElementById('demo-backdrop');
-  const demoPanel = document.getElementById('demo-panel');
-  const demoFab = document.getElementById('demo-fab');
-
-  function openDemo() {
-    renderDemoPanel();
-    demoBackdrop.classList.add('open');
-    demoPanel.classList.add('open');
-  }
-  function closeDemo() {
-    demoBackdrop.classList.remove('open');
-    demoPanel.classList.remove('open');
-  }
-  demoFab.addEventListener('click', openDemo);
-  demoBackdrop.addEventListener('click', closeDemo);
-
-  function renderDemoPanel() {
-    demoPanel.innerHTML = '';
-
-    const header = h('div', { class: 'demo-header' },
-      h('h3', null, 'Demo ', h('span', { class: 'acc' }, 'controls')),
-      h('button', { class: 'iconbtn close', onclick: closeDemo, 'aria-label': 'Close' })
-    );
-    demoPanel.appendChild(header);
-
-    const body = h('div', { class: 'demo-body' });
-
-    // Users
-    body.appendChild(h('div', { class: 'demo-section' },
-      h('h4', null, 'Users on this device'),
-      ...Object.values(state.users).sort((a, b) => b.createdAt - a.createdAt).map(u => {
-        const row = h('div', {
-          class: 'demo-user-row' + (u.id === state.currentUserId ? ' active' : ''),
-          onclick: (e) => {
-            if (e.target.classList.contains('del')) return;
-            switchUser(u.id);
-            navigate(u.onboarded ? 'home' : 'onboard1', {}, { transition: 'fade' });
-            closeDemo();
-            toast(`Now viewing as ${u.name.split(' ')[0]}`, u.initials);
-          }
-        });
-        row.appendChild(h('div', { class: 'avatar sm', style: { background: u.color } }, u.initials));
-        row.appendChild(h('div', { class: 'info' },
-          h('div', { class: 'nm' }, u.name),
-          h('div', { class: 'meta' }, u.onboarded ? `${u.plan} mornings · ${STATE_LABELS[u.currentOrder?.state] || 'no active order'}` : 'Setup in progress')
-        ));
-        row.appendChild(h('button', {
-          class: 'del',
-          onclick: (e) => {
-            e.stopPropagation();
-            if (confirm(`Delete ${u.name}'s profile?`)) {
-              deleteUser(u.id);
-              renderDemoPanel();
-              render();
-              toast(`Deleted ${u.name}`, '🗑');
-            }
-          }
-        }, '🗑'));
-        demoPanel && row;
-        return row;
-      }),
-      h('button', {
-        class: 'btn ghost sm mt-8',
-        onclick: () => {
-          navigate('signup', {}, { transition: 'right' });
-          closeDemo();
-        }
-      }, '+ Add new user')
-    ));
-
-    const u = currentUser();
-    if (u && u.onboarded) {
-      // Simulate states
-      body.appendChild(h('div', { class: 'demo-section' },
-        h('h4', null, `Simulate — ${u.name.split(' ')[0]}'s order`),
-        h('div', { class: 'col gap-6' },
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              startTodayOrder('scheduled');
-              navigate('home', {}, { transition: 'fade' });
-              closeDemo();
-              toast("Reset to scheduled", "↺");
-            }
-          }, '○  Reset to scheduled'),
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              transitionOrder('preparing');
-              navigate('lock', {}, { transition: 'fade' });
-              closeDemo();
-            }
-          }, '🔔  Trigger geofence push'),
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              transitionOrder('preparing');
-              navigate('home', {}, { transition: 'fade' });
-              closeDemo();
-              toast('Now preparing', '◐');
-            }
-          }, '◐  Mark as preparing'),
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              transitionOrder('ready');
-              navigate('home', {}, { transition: 'fade' });
-              closeDemo();
-              toast('Ready for pickup!', '●');
-            }
-          }, '●  Mark as ready'),
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              transitionOrder('picked');
-              navigate('home', {}, { transition: 'fade' });
-              closeDemo();
-              toast('Picked up', '✓');
-            }
-          }, '✓  Mark as picked up')
-        )
-      ));
-
-      // Jump to screens
-      body.appendChild(h('div', { class: 'demo-section' },
-        h('h4', null, 'Jump to screen'),
-        h('div', { class: 'col gap-6' },
-          h('button', { class: 'btn subtle sm', onclick: () => { navigate('home', {}, { transition: 'fade' }); closeDemo(); } }, '🏠  Home dashboard'),
-          h('button', { class: 'btn subtle sm', onclick: () => { navigate('swap', {}, { transition: 'up' }); closeDemo(); } }, '🔄  Swap modal'),
-          h('button', { class: 'btn subtle sm', onclick: () => { navigate('lock', {}, { transition: 'fade' }); closeDemo(); } }, '🔒  Lock-screen push'),
-          h('button', { class: 'btn subtle sm', onclick: () => { navigate('history', {}, { transition: 'right' }); closeDemo(); } }, '📅  Order history'),
-          h('button', { class: 'btn subtle sm', onclick: () => { navigate('settings', {}, { transition: 'right' }); closeDemo(); } }, '⚙️  Settings'),
-          h('button', { class: 'btn subtle sm', onclick: () => { navigate('welcome', {}, { transition: 'left' }); closeDemo(); } }, '👋  Welcome / sign-in')
-        )
-      ));
-
-      // Quick history seed
-      body.appendChild(h('div', { class: 'demo-section' },
-        h('h4', null, 'Demo data'),
-        h('div', { class: 'col gap-6' },
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              const ratings = ['ritual', 'good', 'ritual', 'good', 'meh', 'ritual', 'good'];
-              for (let i = 1; i <= 7; i++) {
-                const date = Date.now() - i * 24 * 3600 * 1000;
-                u.history.push({
-                  state: i === 3 ? 'skipped' : 'picked',
-                  orderNum: generateOrderNum(),
-                  placedAt: date,
-                  completedAt: date,
-                  date,
-                  rating: i === 3 ? null : ratings[i - 1],
-                  items: u.usual
-                });
-              }
-              saveState();
-              toast('Seeded 7 days of history', '📅');
-              renderDemoPanel();
-            }
-          }, '+ Seed 7 days of history'),
-          h('button', {
-            class: 'btn subtle sm',
-            onclick: () => {
-              if (confirm('Wipe history for this user?')) {
-                u.history = [];
-                saveState();
-                renderDemoPanel();
-                render();
-                toast('History wiped', '🗑');
-              }
-            }
-          }, '🗑  Clear history')
-        )
-      ));
-    }
-
-    // Global
-    body.appendChild(h('div', { class: 'demo-section' },
-      h('h4', null, 'Global'),
-      h('div', { class: 'col gap-6' },
-        h('button', {
-          class: 'btn subtle sm',
-          onclick: () => {
-            const url = window.location.href;
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(url);
-              toast('Link copied to clipboard', '🔗');
-            } else {
-              prompt('Share this link:', url);
-            }
-          }
-        }, '🔗  Copy share link'),
-        h('button', {
-          class: 'btn subtle sm',
-          onclick: () => {
-            if (confirm('Wipe ALL profiles and data on this browser? This cannot be undone.')) {
-              localStorage.removeItem(STORAGE_KEY);
-              state = { users: {}, currentUserId: null };
-              if (channel) channel.postMessage({ type: 'state-update', from: clientId });
-              renderDemoPanel();
-              navigate('welcome', {}, { transition: 'fade' });
-              closeDemo();
-              toast('All data wiped', '🗑');
-            }
-          }
-        }, '⚠️  Reset everything')
-      )
-    ));
-
-    body.appendChild(h('div', { class: 'small mute mt-16 center' },
-      'Frontend-only prototype · State stays in this browser'
-    ));
-
-    demoPanel.appendChild(body);
-  }
-
-  // ----------------------------------------------------------------
   // BOOT
   // ----------------------------------------------------------------
   loadState();
+  schedulePreparingAdvance();
 
   // Route from URL hash if present
   if (window.location.hash) {
@@ -2817,7 +2741,6 @@
   }
 
   render();
-  renderDemoPanel();
 
   // expose for debugging
   window.TIMBOT = { state, navigate, currentUser };
