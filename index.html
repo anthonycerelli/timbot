@@ -2337,15 +2337,20 @@
     });
     drinkSec.appendChild(drinkTabs);
 
+    // Drinks in the active category — collapsed into a single dropdown
+    // so 10+ items (Iced & Cold especially) don't blow up the page height.
     const drinksInCat = DRINKS.filter(d => d.cat === drinkCatActive);
-    const drinkChips = h('div', { class: 'chip-row' });
-    drinksInCat.forEach(d => {
-      drinkChips.appendChild(h('button', {
-        class: 'chip' + (draft.drink === d.id ? ' on' : ''),
-        onclick: () => { draft.drink = d.id; rerender(); }
-      }, `${d.emoji} ${d.name}`));
+    const drinkSel = h('select', {
+      class: 'select-input',
+      'aria-label': 'Drink',
+      onchange: (e) => { draft.drink = e.target.value; rerender(); }
     });
-    drinkSec.appendChild(drinkChips);
+    drinksInCat.forEach(d => {
+      const opt = h('option', { value: d.id }, `${d.emoji}  ${d.name}`);
+      if (draft.drink === d.id) opt.setAttribute('selected', '');
+      drinkSel.appendChild(opt);
+    });
+    drinkSec.appendChild(drinkSel);
 
     // Size (hidden for bottled / no-size drinks)
     const selectedDrink = DRINKS.find(d => d.id === draft.drink);
