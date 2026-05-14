@@ -1100,6 +1100,28 @@
     text-transform: uppercase;
   }
 
+  /* ===== Warning banner — used to flag menu-hour conflicts =====
+     Warm amber tint so it reads as "heads-up" not "destructive error". */
+  .warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(182, 128, 58, 0.10);
+    border: 1.5px solid rgba(182, 128, 58, 0.32);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 13px;
+    color: #6e4d1c;
+    line-height: 1.4;
+  }
+  .warning-banner b { color: #4a3411; }
+  .warning-banner-ico {
+    font-size: 16px;
+    line-height: 1;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
   /* ===== Category tabs (used in onboard1 drink/food sections) =====
      Pill-shaped, horizontally scrollable on phones. The active tab is
      filled with the soft paper colour and a thin ink border. */
@@ -1554,11 +1576,14 @@
     { id: 'other',     label: 'Other'       }
   ];
 
+  // Food categories with menu-hour windows. `until` and `from` are 24h times.
+  // Donuts + Pastries are all-day (no window). Breakfast cuts off at 11 AM.
+  // Lunch starts at 11 AM.
   const FOOD_CATEGORIES = [
-    { id: 'breakfast', label: 'Breakfast' },
-    { id: 'lunch',     label: 'Lunch'     },
-    { id: 'baked',     label: 'Baked'     },
-    { id: 'snack',     label: 'Snacks'    }
+    { id: 'breakfast', label: 'Breakfast', availLabel: 'until 11 AM', until: '11:00' },
+    { id: 'lunch',     label: 'Lunch',     availLabel: 'from 11 AM',  from:  '11:00' },
+    { id: 'donuts',    label: 'Donuts',    availLabel: 'all day' },
+    { id: 'pastries',  label: 'Pastries',  availLabel: 'all day' }
   ];
 
   const DRINKS = [
@@ -1641,28 +1666,28 @@
     { id: 'pizza-bacon',      cat: 'lunch', name: 'Bacon Everything Flatbread',  emoji: '🍕', price: 7.99 },
 
     // Baked — donuts + Timbits
-    { id: 'donut',            cat: 'baked', name: 'Filled Donut',         emoji: '🍩', price: 1.69 },
-    { id: 'donut-boston',     cat: 'baked', name: 'Boston Cream',         emoji: '🍩', price: 1.69 },
-    { id: 'donut-honey',      cat: 'baked', name: 'Honey Cruller',        emoji: '🍩', price: 1.69 },
-    { id: 'donut-apple',      cat: 'baked', name: 'Apple Fritter',        emoji: '🍩', price: 1.69 },
-    { id: 'donut-dutchie',    cat: 'baked', name: 'Dutchie',              emoji: '🍩', price: 1.69 },
-    { id: 'donut-double',     cat: 'baked', name: 'Double Chocolate',     emoji: '🍩', price: 1.69 },
-    { id: 'donut-strawberry', cat: 'baked', name: 'Strawberry Vanilla',   emoji: '🍩', price: 1.69 },
-    { id: 'timbits-10',       cat: 'baked', name: '10 Timbits',           emoji: '🍩', price: 2.99 },
-    { id: 'timbits-20',       cat: 'baked', name: '20 Timbits',           emoji: '🍩', price: 4.99 },
-    { id: 'timbits-50',       cat: 'baked', name: '50 Timbits',           emoji: '🍩', price: 9.99 },
+    { id: 'donut',            cat: 'donuts', name: 'Filled Donut',         emoji: '🍩', price: 1.69 },
+    { id: 'donut-boston',     cat: 'donuts', name: 'Boston Cream',         emoji: '🍩', price: 1.69 },
+    { id: 'donut-honey',      cat: 'donuts', name: 'Honey Cruller',        emoji: '🍩', price: 1.69 },
+    { id: 'donut-apple',      cat: 'donuts', name: 'Apple Fritter',        emoji: '🍩', price: 1.69 },
+    { id: 'donut-dutchie',    cat: 'donuts', name: 'Dutchie',              emoji: '🍩', price: 1.69 },
+    { id: 'donut-double',     cat: 'donuts', name: 'Double Chocolate',     emoji: '🍩', price: 1.69 },
+    { id: 'donut-strawberry', cat: 'donuts', name: 'Strawberry Vanilla',   emoji: '🍩', price: 1.69 },
+    { id: 'timbits-10',       cat: 'donuts', name: '10 Timbits',           emoji: '🍩', price: 2.99 },
+    { id: 'timbits-20',       cat: 'donuts', name: '20 Timbits',           emoji: '🍩', price: 4.99 },
+    { id: 'timbits-50',       cat: 'donuts', name: '50 Timbits',           emoji: '🍩', price: 9.99 },
 
     // Snacks
-    { id: 'muffin',            cat: 'snack', name: 'Muffin',                  emoji: '🧁', price: 2.19 },
-    { id: 'muffin-blueberry',  cat: 'snack', name: 'Wild Blueberry Muffin',   emoji: '🫐', price: 2.19 },
-    { id: 'muffin-choc',       cat: 'snack', name: 'Chocolate Chip Muffin',   emoji: '🧁', price: 2.19 },
-    { id: 'muffin-strawberry', cat: 'snack', name: 'Strawberry Cheesecake',   emoji: '🍓', price: 2.49 },
-    { id: 'cookie-choc',       cat: 'snack', name: 'Chocolate Chunk Cookie',  emoji: '🍪', price: 1.99 },
-    { id: 'cookie-oatmeal',    cat: 'snack', name: 'Oatmeal Raisin Cookie',   emoji: '🍪', price: 1.99 },
-    { id: 'cookie-double',     cat: 'snack', name: 'Double Chocolate Cookie', emoji: '🍪', price: 1.99 },
-    { id: 'croissant',         cat: 'snack', name: 'Butter Croissant',        emoji: '🥐', price: 2.49 },
-    { id: 'brownie',           cat: 'snack', name: 'Chocolate Brownie',       emoji: '🍫', price: 2.49 },
-    { id: 'snacker',           cat: 'snack', name: 'Anytime Snacker',         emoji: '🥨', price: 3.49 }
+    { id: 'muffin',            cat: 'pastries', name: 'Muffin',                  emoji: '🧁', price: 2.19 },
+    { id: 'muffin-blueberry',  cat: 'pastries', name: 'Wild Blueberry Muffin',   emoji: '🫐', price: 2.19 },
+    { id: 'muffin-choc',       cat: 'pastries', name: 'Chocolate Chip Muffin',   emoji: '🧁', price: 2.19 },
+    { id: 'muffin-strawberry', cat: 'pastries', name: 'Strawberry Cheesecake',   emoji: '🍓', price: 2.49 },
+    { id: 'cookie-choc',       cat: 'pastries', name: 'Chocolate Chunk Cookie',  emoji: '🍪', price: 1.99 },
+    { id: 'cookie-oatmeal',    cat: 'pastries', name: 'Oatmeal Raisin Cookie',   emoji: '🍪', price: 1.99 },
+    { id: 'cookie-double',     cat: 'pastries', name: 'Double Chocolate Cookie', emoji: '🍪', price: 1.99 },
+    { id: 'croissant',         cat: 'pastries', name: 'Butter Croissant',        emoji: '🥐', price: 2.49 },
+    { id: 'brownie',           cat: 'pastries', name: 'Chocolate Brownie',       emoji: '🍫', price: 2.49 },
+    { id: 'snacker',           cat: 'pastries', name: 'Anytime Snacker',         emoji: '🥨', price: 3.49 }
   ];
 
   // Quick-pick combos grouped by bundle type. Each maps a 1-tap selection
@@ -2011,6 +2036,39 @@
     return drink + food;
   }
 
+  // Returns true if a food category is available at the given 24h time.
+  // Pass null/undefined for time to skip the check (treat as always available).
+  function foodCatAvailableAt(catId, time24) {
+    if (!time24) return true;
+    const cat = FOOD_CATEGORIES.find(c => c.id === catId);
+    if (!cat) return true;
+    const [hh, mm] = time24.split(':').map(Number);
+    const t = hh * 60 + mm;
+    if (cat.until) {
+      const [uh, um] = cat.until.split(':').map(Number);
+      if (t > uh * 60 + um) return false;
+    }
+    if (cat.from) {
+      const [fh, fm] = cat.from.split(':').map(Number);
+      if (t < fh * 60 + fm) return false;
+    }
+    return true;
+  }
+
+  function foodAvailableAt(foodId, time24) {
+    const food = FOODS.find(f => f.id === foodId);
+    if (!food) return true;
+    return foodCatAvailableAt(food.cat, time24);
+  }
+
+  // Returns the list of FOOD items from `foodIds` that are NOT served at `time24`.
+  function unavailableFoodsAt(foodIds, time24) {
+    if (!time24 || !foodIds) return [];
+    return foodIds
+      .map(id => FOODS.find(f => f.id === id))
+      .filter(f => f && !foodCatAvailableAt(f.cat, time24));
+  }
+
   function statusBar(extra = '') {
     return h('div', { class: 'statusbar' },
       h('span', null, fmtTimeShort()),
@@ -2236,7 +2294,7 @@
     const firstFood = (draft.food || []).map(id => FOODS.find(f => f.id === id)).find(Boolean);
     const bundleDefaultFoodCat = ({
       morning: 'breakfast', coffee: 'breakfast', lunch: 'lunch',
-      treat:   'baked',     share:  'baked'
+      treat:   'donuts',    share:  'donuts'
     })[draft.bundle] || 'breakfast';
     const foodCatActive = onboard1UI.foodCatView || firstFood?.cat || bundleDefaultFoodCat;
 
@@ -2396,22 +2454,64 @@
 
     // ===== FOOD section (hidden for coffee-run bundle) =====
     if (draft.bundle !== 'coffee') {
+      const pickupTime = u.schedule?.time;
+      // Default the filter to ON whenever a pickup time is set, so by default
+      // the user only sees food they can actually get at that hour.
+      const filterActive = pickupTime ? (onboard1UI.filterByTime !== false) : false;
+
       const foodSec = h('div', { class: 'col gap-8' });
       foodSec.appendChild(h('div', { class: 'flex between center-y' },
         h('div', { class: 'eyebrow mute' }, 'Food (pick any)'),
         h('div', { class: 'small mute' }, draft.food.length ? `${draft.food.length} added` : 'optional')
       ));
 
+      // Pickup-time filter chip — only relevant once a pickup time exists
+      if (pickupTime) {
+        foodSec.appendChild(h('div', { class: 'flex gap-6 center-y', style: { flexWrap: 'wrap' } },
+          h('button', {
+            class: 'chip sm' + (filterActive ? ' on' : ''),
+            onclick: () => { onboard1UI.filterByTime = !filterActive; rerender(); }
+          }, (filterActive ? '✓ ' : '') + 'Available at ' + formatTime(pickupTime)),
+          filterActive
+            ? h('span', { class: 'tiny mute' }, 'Hiding items not served at this hour')
+            : h('span', { class: 'tiny mute' }, 'Showing all items')
+        ));
+      }
+
+      // When filtering, hide categories that have nothing available right now
+      const visibleCats = filterActive
+        ? FOOD_CATEGORIES.filter(c => foodCatAvailableAt(c.id, pickupTime))
+        : FOOD_CATEGORIES;
+      const effectiveFoodCat = visibleCats.find(c => c.id === foodCatActive)
+        ? foodCatActive
+        : (visibleCats[0]?.id || 'breakfast');
+
       const foodTabs = h('div', { class: 'tab-row' });
-      FOOD_CATEGORIES.forEach(c => {
+      visibleCats.forEach(c => {
+        const showHours = !filterActive && c.availLabel && c.availLabel !== 'all day';
+        const label = showHours ? `${c.label} · ${c.availLabel}` : c.label;
         foodTabs.appendChild(h('button', {
-          class: 'tab' + (foodCatActive === c.id ? ' active' : ''),
+          class: 'tab' + (effectiveFoodCat === c.id ? ' active' : ''),
           onclick: () => { onboard1UI.foodCatView = c.id; rerender(); }
-        }, c.label));
+        }, label));
       });
       foodSec.appendChild(foodTabs);
 
-      const foodsInCat = FOODS.filter(f => f.cat === foodCatActive);
+      // Warning banner if anything currently in the bundle conflicts with the time
+      const conflicts = unavailableFoodsAt(draft.food, pickupTime);
+      if (conflicts.length > 0) {
+        const names = conflicts.map(f => f.name).join(', ');
+        foodSec.appendChild(h('div', { class: 'warning-banner' },
+          h('span', { class: 'warning-banner-ico' }, '⚠️'),
+          h('span', null,
+            h('b', null, names),
+            ` ${conflicts.length === 1 ? "isn't" : "aren't"} served at ${formatTime(pickupTime)}. `,
+            'Pick a later time on step 2 or remove from the bundle.'
+          )
+        ));
+      }
+
+      const foodsInCat = FOODS.filter(f => f.cat === effectiveFoodCat);
       const tg = h('div', { class: 'tile-grid' });
       foodsInCat.forEach(f => {
         const selected = draft.food.includes(f.id);
@@ -2549,6 +2649,23 @@
         draft.perDay ? 'set per day' : 'all days at ' + formatTime(draft.time)
       )
     ));
+
+    // If the user already built a usual on step 1, warn them whenever the
+    // current default time leaves some of their items off the menu.
+    if (!draft.perDay && u.usual?.food) {
+      const conflictsOnTime = unavailableFoodsAt(u.usual.food, draft.time);
+      if (conflictsOnTime.length > 0) {
+        const names = conflictsOnTime.map(f => f.name).join(', ');
+        timeSec.appendChild(h('div', { class: 'warning-banner' },
+          h('span', { class: 'warning-banner-ico' }, '⚠️'),
+          h('span', null,
+            h('b', null, names),
+            ` ${conflictsOnTime.length === 1 ? "isn't" : "aren't"} served at ${formatTime(draft.time)}. `,
+            'Try a later time or edit your usual on step 1.'
+          )
+        ));
+      }
+    }
 
     if (!draft.perDay) {
       // Common commuter times as chips
