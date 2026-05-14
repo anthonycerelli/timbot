@@ -2992,7 +2992,7 @@
 
     card.appendChild(h('div', { class: 'flex between center-y', style: { marginBottom: '14px' } },
       h('div', { class: 'eyebrow' }, 'Your weekly bundle'),
-      h('span', { class: 'badge dark' }, `${N} ${N === 1 ? 'MORNING' : 'MORNINGS'} / WK`)
+      h('span', { class: 'badge dark', style: { whiteSpace: 'nowrap' } }, `${N} ${N === 1 ? 'MORNING' : 'MORNINGS'}`)
     ));
 
     // Item rows — own container, breathes
@@ -3029,32 +3029,39 @@
       )
     ));
 
-    // "You save" — the hero number, in green
+    // Green hero — always shown, identical styling. The right-side content
+    // swaps based on whether the math nets a $$ saving or just convenience.
+    const heroPill = h('div', {
+      class: 'flex between',
+      style: {
+        alignItems: 'center',
+        padding: '14px 14px',
+        marginTop: '8px',
+        background: 'var(--save-soft)',
+        borderRadius: '12px'
+      }
+    });
     if (savings > 0) {
-      card.appendChild(h('div', {
-        class: 'flex between',
-        style: {
-          alignItems: 'center',
-          padding: '14px 14px',
-          marginTop: '8px',
-          background: 'var(--save-soft)',
-          borderRadius: '12px'
-        }
-      },
-        h('div', { class: 'col', style: { gap: '2px' } },
-          h('div', { style: { fontWeight: '800', fontSize: '15px', color: 'var(--save)' } }, 'You save'),
-          h('div', { class: 'tiny', style: { color: 'var(--save)', opacity: '0.8', fontWeight: '600' } }, 'every week')
-        ),
-        h('div', { style: { textAlign: 'right', lineHeight: '1' } },
-          h('span', { style: { fontWeight: '800', fontSize: '30px', color: 'var(--save)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
-          h('span', { style: { fontSize: '13px', color: 'var(--save)', fontWeight: '700', marginLeft: '3px' } }, '/wk')
-        )
+      heroPill.appendChild(h('div', { class: 'col', style: { gap: '2px' } },
+        h('div', { style: { fontWeight: '800', fontSize: '15px', color: 'var(--save)' } }, 'You save'),
+        h('div', { class: 'tiny', style: { color: 'var(--save)', opacity: '0.8', fontWeight: '600' } }, 'every week')
+      ));
+      heroPill.appendChild(h('div', { style: { textAlign: 'right', lineHeight: '1' } },
+        h('span', { style: { fontWeight: '800', fontSize: '30px', color: 'var(--save)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
+        h('span', { style: { fontSize: '13px', color: 'var(--save)', fontWeight: '700', marginLeft: '3px' } }, '/wk')
       ));
     } else {
-      card.appendChild(h('div', { class: 'small center mute', style: { marginTop: '8px' } },
-        'Bundle matches à la carte — extra mornings are free flex.'
+      // Bundle ≈ à la carte for a minimal config — sell the convenience instead.
+      heroPill.appendChild(h('div', { class: 'col', style: { gap: '2px' } },
+        h('div', { style: { fontWeight: '800', fontSize: '15px', color: 'var(--save)' } }, 'Set & forget'),
+        h('div', { class: 'tiny', style: { color: 'var(--save)', opacity: '0.8', fontWeight: '600' } }, 'auto-ordered every morning')
+      ));
+      heroPill.appendChild(h('div', { style: { textAlign: 'right', lineHeight: '1' } },
+        h('span', { style: { fontWeight: '800', fontSize: '24px', color: 'var(--save)', letterSpacing: '-0.5px' } }, '~15 min'),
+        h('span', { style: { fontSize: '13px', color: 'var(--save)', fontWeight: '700', marginLeft: '3px' } }, '/wk back')
       ));
     }
+    card.appendChild(heroPill);
 
     card.appendChild(h('div', { class: 'tiny mute center', style: { marginTop: '12px' } },
       `That's $${perMorning.toFixed(2)} per morning · cancel or pause anytime`
