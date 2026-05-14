@@ -964,6 +964,114 @@
     100% { opacity: 0; transform: translateY(400px) rotate(720deg); }
   }
 
+  /* ===== Plan pill (onboard3 plan selector) ===== */
+  .plan-pill {
+    flex: 1;
+    background: var(--paper-card);
+    border: 2px solid transparent;
+    border-radius: 18px;
+    padding: 0 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 132px;
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .plan-pill:hover { box-shadow: var(--shadow-lift); }
+  .plan-pill:active { transform: scale(0.97); }
+  .plan-pill.selected {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(194, 90, 48, 0.18);
+  }
+  .plan-pill-badge-slot {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px 0 6px;
+  }
+  .plan-pill-fit {
+    background: var(--ink);
+    color: #fff8e8;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    white-space: nowrap;
+  }
+  .plan-pill-num {
+    font-weight: 800;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .plan-pill.selected .plan-pill-num { color: var(--accent); }
+  .plan-pill-label {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 5px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+  .plan-pill-price {
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 10px;
+    color: var(--ink);
+  }
+  .plan-pill.selected .plan-pill-price { color: var(--accent); }
+
+  /* ===== Receipt item rows ===== */
+  .receipt-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 6px 0;
+    align-items: flex-start;
+  }
+  .receipt-item-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+    min-width: 0;
+  }
+  .receipt-item-text .name {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .receipt-item-text .opts {
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .receipt-item-meta {
+    flex-shrink: 0;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .receipt-item-meta .qty {
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-width: 28px;
+    text-align: right;
+    font-weight: 600;
+  }
+  .receipt-item-meta .total {
+    font-weight: 700;
+    font-size: 15px;
+    min-width: 64px;
+    text-align: right;
+    color: var(--ink);
+  }
+
   /* ===== Util ===== */
   .flex { display: flex; }
   .col { display: flex; flex-direction: column; }
@@ -1107,6 +1215,13 @@
       bottom: max(env(safe-area-inset-bottom), 16px);
       max-width: calc(100% - 28px);
     }
+
+    /* More room before the sticky footer-cta gradient */
+    .pad { padding-bottom: 44px; }
+
+    /* Receipt: comfier on phones */
+    .receipt-item { padding: 7px 0; }
+    .receipt-item-text { font-size: 14.5px; }
 
     /* Lock screen: full-bleed, fade in time */
     .lockscreen-bg .lock-time {
@@ -1979,16 +2094,16 @@
     const dayLabels = u.schedule.days.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean).join(' · ');
     content.appendChild(h('div', {
       class: 'card soft flex between center-y',
-      style: { padding: '12px 14px' }
+      style: { padding: '14px 16px', gap: '10px' }
     },
       h('div', { class: 'col gap-4', style: { flex: '1', minWidth: '0' } },
-        h('div', { class: 'tiny mute', style: { letterSpacing: '1px', textTransform: 'uppercase', fontWeight: '700' } }, 'Your schedule'),
-        h('div', { class: 'small', style: { fontWeight: '600' } }, dayLabels || '(none picked)'),
+        h('div', { class: 'tiny mute', style: { letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: '700' } }, 'Your schedule'),
+        h('div', { style: { fontWeight: '700', fontSize: '14.5px', lineHeight: '1.3' } }, dayLabels || '(none picked)'),
         h('div', { class: 'tiny mute' }, formatTime(u.schedule.time) + ' · ' + (u.store?.split(',')[0] || ''))
       ),
       h('button', {
         class: 'link',
-        style: { padding: '6px 8px', textDecoration: 'none', color: 'var(--accent)', fontWeight: '700' },
+        style: { padding: '8px 10px', textDecoration: 'none', color: 'var(--accent)', fontWeight: '700', flexShrink: '0' },
         onclick: () => navigate('onboard2', {}, { transition: 'left' })
       }, 'edit ›')
     ));
@@ -1999,41 +2114,22 @@
       const isSelected = selected === p.id;
       const isRecommended = p.id === recommended.id;
       const pill = h('button', {
-        class: 'card card-press',
-        style: {
-          flex: '1', padding: '12px 6px', textAlign: 'center',
-          background: isSelected ? 'var(--accent-soft)' : 'var(--paper-card)',
-          border: isSelected ? '2px solid var(--accent)' : '2px solid transparent',
-          borderRadius: '14px',
-          position: 'relative'
-        },
+        class: 'plan-pill' + (isSelected ? ' selected' : ''),
         onclick: () => {
           u.plan = p.id;
           selected = p.id;
           rerender();
         }
-      },
-        isRecommended ? h('div', {
-          style: {
-            position: 'absolute', top: '-9px', left: '50%', transform: 'translateX(-50%)',
-            background: 'var(--ink)', color: '#fff8e8',
-            padding: '2px 8px', borderRadius: '999px',
-            fontSize: '9px', fontWeight: '800', letterSpacing: '1px'
-          }
-        }, 'YOUR FIT') : null,
-        h('div', {
-          style: {
-            fontWeight: '800', fontSize: '22px',
-            color: isSelected ? 'var(--accent)' : 'var(--ink)',
-            lineHeight: '1', marginTop: isRecommended ? '4px' : '0'
-          }
-        }, String(p.mornings)),
-        h('div', { class: 'tiny mute', style: { marginTop: '4px' } }, 'mornings/wk'),
-        h('div', {
-          class: 'small',
-          style: { fontWeight: '700', marginTop: '6px', color: isSelected ? 'var(--accent)' : 'var(--ink)' }
-        }, '$' + p.weekly)
-      );
+      });
+      // Badge slot always present so heights stay consistent
+      const badgeSlot = h('div', { class: 'plan-pill-badge-slot' });
+      if (isRecommended) {
+        badgeSlot.appendChild(h('span', { class: 'plan-pill-fit' }, 'YOUR FIT'));
+      }
+      pill.appendChild(badgeSlot);
+      pill.appendChild(h('div', { class: 'plan-pill-num' }, String(p.mornings)));
+      pill.appendChild(h('div', { class: 'plan-pill-label' }, 'mornings/wk'));
+      pill.appendChild(h('div', { class: 'plan-pill-price' }, '$' + p.weekly));
       planRow.appendChild(pill);
     });
     content.appendChild(planRow);
@@ -2054,7 +2150,6 @@
         navigate('onboardDone', {}, { transition: 'up' });
       }
     }, 'Start TimBot — $' + selectedPlan.weekly + '/wk'));
-    footer.appendChild(h('button', { class: 'link', onclick: () => toast('Pause or cancel from Settings anytime.') }, 'Cancel or pause anytime'));
     view.appendChild(footer);
 
     function rerender() {
@@ -2086,15 +2181,15 @@
     const savings = +(subtotal - bundle).toFixed(2);
     const perMorning = +(bundle / N).toFixed(2);
 
-    const card = h('div', { class: 'card lift', style: { padding: '18px 20px' } });
+    const card = h('div', { class: 'card lift', style: { padding: '20px 22px 22px' } });
 
-    card.appendChild(h('div', { class: 'flex between center-y', style: { marginBottom: '10px' } },
+    card.appendChild(h('div', { class: 'flex between center-y', style: { marginBottom: '14px' } },
       h('div', { class: 'eyebrow' }, 'Your weekly bundle'),
       h('span', { class: 'badge dark' }, `${N} ${N === 1 ? 'MORNING' : 'MORNINGS'}`)
     ));
 
-    // Item rows
-    const items = h('div', { class: 'col', style: { gap: '8px' } });
+    // Item rows — own container, breathes
+    const items = h('div', { class: 'col' });
     items.appendChild(receiptLine(
       `${u.usual.size} ${drink?.name || 'Drink'}`,
       `${u.usual.cream}c · ${u.usual.sugar}s`,
@@ -2104,37 +2199,37 @@
       items.appendChild(receiptLine(l.name, null, l.unit, N, l.line));
     });
     if (foodItems.length === 0) {
-      items.appendChild(h('div', { class: 'tiny mute' }, 'Drink only — add food in step 1 if you want more in the bundle.'));
+      items.appendChild(h('div', { class: 'tiny mute', style: { padding: '6px 0' } }, 'Drink only — add food in step 1 if you want more in the bundle.'));
     }
     card.appendChild(items);
 
-    card.appendChild(h('hr', { class: 'hr-dashed' }));
+    card.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '10px 0' } }));
 
     // À la carte vs bundle
-    card.appendChild(h('div', { class: 'flex between center-y small' },
+    card.appendChild(h('div', { class: 'flex between center-y small', style: { padding: '3px 0' } },
       h('span', { class: 'mute' }, 'À la carte total'),
       h('span', { style: { fontWeight: '600', color: 'var(--ink-soft)', textDecoration: 'line-through' } }, '$' + subtotal.toFixed(2))
     ));
-    card.appendChild(h('div', { class: 'flex between center-y small mt-4' },
+    card.appendChild(h('div', { class: 'flex between center-y small', style: { padding: '3px 0' } },
       h('span', { class: 'mute' }, `TimBot bundle`),
       h('span', { style: { fontWeight: '700' } }, '$' + bundle.toFixed(2))
     ));
 
-    card.appendChild(h('hr', { class: 'hr-dashed' }));
+    card.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '10px 0 14px' } }));
 
-    // Big savings number
+    // Big savings row
     if (savings > 0) {
-      card.appendChild(h('div', { class: 'flex between center-y', style: { alignItems: 'baseline' } },
-        h('span', { style: { fontWeight: '700', fontSize: '15px' } }, 'You save'),
-        h('div', { style: { textAlign: 'right' } },
-          h('span', { style: { fontWeight: '800', fontSize: '26px', color: 'var(--accent)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
-          h('span', { style: { fontSize: '13px', color: 'var(--accent)', fontWeight: '600', marginLeft: '3px' } }, '/wk')
+      card.appendChild(h('div', { class: 'flex between', style: { alignItems: 'baseline' } },
+        h('span', { style: { fontWeight: '700', fontSize: '16px' } }, 'You save'),
+        h('div', { style: { textAlign: 'right', lineHeight: '1' } },
+          h('span', { style: { fontWeight: '800', fontSize: '28px', color: 'var(--accent)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
+          h('span', { style: { fontSize: '13px', color: 'var(--accent)', fontWeight: '700', marginLeft: '3px' } }, '/wk')
         )
       ));
     } else {
       card.appendChild(h('div', { class: 'small center mute' }, 'Bundle matches à la carte — extra mornings are free flex.'));
     }
-    card.appendChild(h('div', { class: 'tiny mute mt-4 center' },
+    card.appendChild(h('div', { class: 'tiny mute center', style: { marginTop: '10px' } },
       `That's $${perMorning.toFixed(2)} per morning · cancel or pause anytime`
     ));
 
@@ -2142,14 +2237,14 @@
   }
 
   function receiptLine(name, opts, unitPrice, qty, lineTotal) {
-    return h('div', { class: 'flex between center-y', style: { gap: '8px' } },
-      h('div', { style: { flex: '1', minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
-        h('span', { style: { fontWeight: '600', fontSize: '13px' } }, name),
-        opts ? h('span', { class: 'tiny mute' }, ' · ' + opts) : null
-      ),
-      h('div', { class: 'flex center-y gap-8', style: { flexShrink: '0' } },
-        h('span', { class: 'tiny mute', style: { minWidth: '24px', textAlign: 'right' } }, `× ${qty}`),
-        h('span', { style: { fontWeight: '700', fontSize: '13px', minWidth: '54px', textAlign: 'right' } }, '$' + lineTotal.toFixed(2))
+    const textDiv = h('div', { class: 'receipt-item-text' });
+    textDiv.appendChild(h('span', { class: 'name' }, name));
+    if (opts) textDiv.appendChild(h('span', { class: 'opts' }, ' · ' + opts));
+    return h('div', { class: 'receipt-item' },
+      textDiv,
+      h('div', { class: 'receipt-item-meta' },
+        h('span', { class: 'qty' }, '× ' + qty),
+        h('span', { class: 'total' }, '$' + lineTotal.toFixed(2))
       )
     );
   }
