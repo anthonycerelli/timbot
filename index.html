@@ -2114,30 +2114,32 @@
     // Title + sub (tight pair)
     content.appendChild(h('div', { class: 'col', style: { gap: '6px' } },
       h('h1', { class: 'title', style: { margin: 0 } }, 'Pick your week'),
-      h('p', { class: 'sub', style: { margin: 0 } }, 'Set when and where. Tweak anything later.')
+      h('p', { class: 'sub', style: { margin: 0 } }, 'Your weekly routine. It repeats automatically — pause anytime.')
     ));
 
     // ===== SECTION 1: DAYS =====
+    // Showing NEXT week's dates so the user is always picking from the
+    // future, never from days that are already in progress or past.
     const daysSec = h('div', { class: 'col', style: { gap: '12px' } });
     daysSec.appendChild(h('div', { class: 'flex between center-y' },
-      h('div', { class: 'eyebrow mute' }, 'Mornings'),
+      h('div', { class: 'eyebrow mute' }, 'Every week'),
       h('div', {
         class: 'tiny',
         style: { fontWeight: '700', color: dayCount > 0 ? 'var(--accent)' : 'var(--ink-mute)' }
-      }, dayCount === 0 ? 'pick at least one' : `${dayCount} selected`)
+      }, dayCount === 0 ? 'pick at least one' : `${dayCount} morning${dayCount > 1 ? 's' : ''}/wk`)
     ));
 
     const today = new Date();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    const nextSunday = new Date(today);
+    nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+    nextSunday.setHours(0, 0, 0, 0);
 
     const wg = h('div', { class: 'weekgrid' });
     for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      const isToday = d.toDateString() === today.toDateString();
+      const d = new Date(nextSunday);
+      d.setDate(nextSunday.getDate() + i);
       const c = h('div', {
-        class: 'day' + (draft.days[i] ? ' on' : '') + (isToday ? ' today' : ''),
+        class: 'day' + (draft.days[i] ? ' on' : ''),
         onclick: () => { draft.days[i] = !draft.days[i]; rerender(); }
       },
         h('span', null, DAY_NAMES[i][0]),
@@ -2146,6 +2148,23 @@
       wg.appendChild(c);
     }
     daysSec.appendChild(wg);
+
+    // Recurrence footnote — first selected day + "repeats weekly" framing
+    let recurrenceLine;
+    if (dayCount === 0) {
+      recurrenceLine = 'Pick mornings to start your weekly routine';
+    } else {
+      const firstIdx = draft.days.findIndex(Boolean);
+      const startDate = new Date(nextSunday);
+      startDate.setDate(nextSunday.getDate() + firstIdx);
+      const startLabel = `${DAY_NAMES_LONG[startDate.getDay()].slice(0, 3)} ${MONTH_NAMES[startDate.getMonth()]} ${startDate.getDate()}`;
+      recurrenceLine = `Starts ${startLabel} · repeats every week until you pause`;
+    }
+    daysSec.appendChild(h('div', {
+      class: 'tiny center',
+      style: { color: 'var(--ink-soft)', padding: '2px 0 0' }
+    }, recurrenceLine));
+
     content.appendChild(daysSec);
 
     // ===== SECTION 2: TIME =====
