@@ -522,6 +522,59 @@
     padding: 0;
   }
 
+  /* ===== Per-day time row (advanced flow in onboard2) =====
+     Same vocabulary as the chip-card pattern: a tappable card with the
+     day name on the left and a dark "current time" chip on the right.
+     A hidden native <input type="time"> sits over the row so tapping
+     anywhere opens the picker. */
+  .perday-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--paper-card);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    cursor: pointer;
+    min-height: 58px;
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  .perday-row:hover { box-shadow: var(--shadow-lift); }
+  .perday-row:active { transform: scale(0.99); }
+  .perday-row-day {
+    font-weight: 600;
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+  .perday-row-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  .perday-row-chev {
+    opacity: 0.55;
+    font-size: 16px;
+    line-height: 1;
+    margin-left: 2px;
+  }
+  .perday-row input[type="time"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: transparent;
+    padding: 0;
+  }
+
   /* ===== Toggle ===== */
   .toggle {
     width: 46px; height: 26px;
@@ -2129,26 +2182,61 @@
       timeRow.appendChild(customChip);
       timeSec.appendChild(timeRow);
     } else {
-      // Per-day inputs
-      const perDay = h('div', { class: 'col gap-6' });
+      // Per-day rows — chip-card style, tap anywhere opens the native picker.
+      const perDay = h('div', { class: 'col', style: { gap: '6px' } });
       let any = false;
       for (let i = 0; i < 7; i++) {
         if (!draft.days[i]) continue;
         any = true;
-        const row = h('div', { class: 'time-pill' },
-          h('span', { class: 'label' }, DAY_NAMES_LONG[i]),
-          h('input', {
-            type: 'time',
-            value: draft.perDayTimes[i],
-            onchange: (e) => { draft.perDayTimes[i] = e.target.value; }
-          })
-        );
+
+        const row = h('label', {
+          class: 'perday-row',
+          'aria-label': `${DAY_NAMES_LONG[i]} pickup time`
+        });
+
+        row.appendChild(h('span', { class: 'perday-row-day' }, DAY_NAMES_LONG[i]));
+
+        row.appendChild(h('span', { class: 'chip on perday-row-chip' },
+          fmtClock24(draft.perDayTimes[i]),
+          h('span', { class: 'perday-row-chev' }, '›')
+        ));
+
+        row.appendChild(h('input', {
+          type: 'time',
+          value: draft.perDayTimes[i],
+          onchange: (e) => {
+            if (e.target.value) {
+              draft.perDayTimes[i] = e.target.value;
+              rerender();
+            }
+          }
+        }));
+
         perDay.appendChild(row);
       }
       if (!any) {
-        perDay.appendChild(h('div', { class: 'tiny mute center', style: { padding: '12px' } },
-          'Select some days above first.'
-        ));
+        perDay.appendChild(h('div', {
+          class: 'tiny mute center',
+          style: { padding: '20px 12px', borderRadius: '12px', background: 'var(--paper-2)' }
+        }, 'Select some days above first.'));
+      }
+
+      // Quick "match all" affordance — handy when the user is wrangling per-day times
+      // and just wants to reset them to whatever the default was.
+      if (any) {
+        const allMatch = draft.perDayTimes.every((t, i) => !draft.days[i] || t === draft.perDayTimes.find((_, j) => draft.days[j]));
+        if (!allMatch) {
+          perDay.appendChild(h('button', {
+            class: 'link',
+            style: { marginTop: '2px', textDecoration: 'none', color: 'var(--accent)', fontWeight: '700', fontSize: '12px' },
+            onclick: () => {
+              // Reset every active day to the most recent base default time
+              const baseTime = draft.time;
+              draft.perDayTimes = draft.perDayTimes.map(() => baseTime);
+              rerender();
+            }
+          }, '↺  Reset all to ' + fmtClock24(draft.time)));
+        }
       }
       timeSec.appendChild(perDay);
     }
@@ -2157,14 +2245,22 @@
     timeSec.appendChild(h('button', {
       class: 'flex between center-y',
       style: {
-        background: 'transparent', border: 'none', padding: '6px 2px',
+        background: 'transparent', border: 'none', padding: '8px 2px',
         cursor: 'pointer', width: '100%', textAlign: 'left'
       },
-      onclick: () => { draft.perDay = !draft.perDay; rerender(); }
+      onclick: () => {
+        if (!draft.perDay) {
+          // Enabling per-day → snap every per-day slot to the current default
+          // so the user starts from a known, consistent state.
+          draft.perDayTimes = draft.perDayTimes.map(() => draft.time);
+        }
+        draft.perDay = !draft.perDay;
+        rerender();
+      }
     },
       h('div', { class: 'col', style: { gap: '2px' } },
         h('div', { class: 'small', style: { fontWeight: '600' } }, 'Different time per day'),
-        h('div', { class: 'tiny mute' }, draft.perDay ? 'Using per-day times' : 'Useful if your commute varies')
+        h('div', { class: 'tiny mute' }, draft.perDay ? 'On — tap a day above to change' : 'Useful if your commute varies')
       ),
       h('div', { class: 'toggle' + (draft.perDay ? ' on' : '') })
     ));
