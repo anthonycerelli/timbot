@@ -2250,12 +2250,7 @@
     const footer = h('div', { class: 'footer-cta' });
     footer.appendChild(h('button', {
       class: 'btn primary',
-      onclick: () => {
-        // Auto-create a nameless profile and jump straight into onboarding.
-        // The user can set a name later from Settings if they want one.
-        createUser('');
-        navigate('onboard1', {}, { transition: 'right' });
-      }
+      onclick: () => navigate('signup', {}, { transition: 'right' })
     }, users.length ? 'Add another profile' : 'Set up TimBot →'));
     // Reset link — only shown once there's data to clear
     if (users.length > 0) {
@@ -2275,6 +2270,48 @@
   };
 
   // ---- ONBOARD STEP 1 — BUILD USUAL ----
+  // ---- SIGNUP — short, optional "what should we call you?" step ----
+  views.signup = () => {
+    const view = h('div', { class: 'view' });
+    view.appendChild(statusBar());
+    view.appendChild(topBar({ back: () => navigate('welcome', {}, { transition: 'left' }), title: 'Create profile' }));
+
+    const content = h('div', { class: 'view-scroll pad col gap-16' });
+    content.appendChild(h('h1', { class: 'title' }, 'What should we call you?'));
+    content.appendChild(h('p', { class: 'sub' },
+      "Optional — leave it blank to set up faster and rename later in Settings."
+    ));
+
+    const field = h('div', { class: 'field mt-12' });
+    field.appendChild(h('label', { class: 'input-label' }, 'Your name'));
+    const input = h('input', {
+      class: 'input',
+      type: 'text',
+      autocomplete: 'given-name',
+      placeholder: 'e.g. Sandra (optional)',
+      maxlength: 40
+    });
+    field.appendChild(input);
+    content.appendChild(field);
+
+    view.appendChild(content);
+
+    const submit = () => {
+      const name = input.value.trim();
+      createUser(name);
+      if (name) toast(`Hi ${name.split(/\s+/)[0]} 👋`);
+      navigate('onboard1', {}, { transition: 'right' });
+    };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+
+    const footer = h('div', { class: 'footer-cta' });
+    footer.appendChild(h('button', { class: 'btn primary', onclick: submit }, 'Continue →'));
+    view.appendChild(footer);
+
+    setTimeout(() => input.focus(), 80);
+    return view;
+  };
+
   views.onboard1 = () => {
     const u = currentUser();
     if (!u) { navigate('welcome'); return h('div'); }
