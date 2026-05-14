@@ -1100,6 +1100,62 @@
     text-transform: uppercase;
   }
 
+  /* ===== Quick picks (onboard1 combo strip) =====
+     Horizontal scroll of preset routines. Tapping a card populates the
+     full "usual" in one go and highlights the matching card. */
+  .quickpicks-wrap {
+    margin: 0 -22px;
+    padding: 0 22px;
+  }
+  .quickpicks-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 6px 22px 10px;
+    margin: 0 -22px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .quickpicks-row::-webkit-scrollbar { display: none; }
+  .quickpick {
+    flex: 0 0 auto;
+    width: 168px;
+    padding: 14px;
+    border-radius: 16px;
+    background: var(--paper-card);
+    border: 1.5px solid transparent;
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+    color: var(--ink);
+    text-align: left;
+    font-family: inherit;
+  }
+  .quickpick:active { transform: scale(0.97); }
+  .quickpick:hover { box-shadow: var(--shadow-lift); }
+  .quickpick.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .quickpick-emoji {
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .quickpick-label {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .quickpick-sub {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    line-height: 1.35;
+  }
+
   /* ===== Plan pill (onboard3 plan selector) ===== */
   .plan-pill {
     flex: 1;
@@ -1444,25 +1500,94 @@
     '#5b8f7a', '#8f5b5b'
   ];
 
+  // Prototype seed menu — generic, widely-recognizable QSR vocabulary.
+  // Prices are approximate GTA market figures for ballpark math, not official.
+  // Swap this seed for the operator's actual menu feed before launch.
   const DRINKS = [
-    { id: 'coffee',     name: 'Coffee',        emoji: '☕', price: 2.49 },
-    { id: 'latte',      name: 'Latte',         emoji: '🥛', price: 4.49 },
-    { id: 'tea',        name: 'Steeped Tea',   emoji: '🍵', price: 2.29 },
-    { id: 'iced',       name: 'Iced Coffee',   emoji: '🧊', price: 3.49 },
-    { id: 'capp',       name: 'Cappuccino',    emoji: '☕', price: 4.29 },
-    { id: 'hotchoc',    name: 'Hot Chocolate', emoji: '🍫', price: 3.49 }
+    { id: 'coffee',     name: 'Coffee',           emoji: '☕', price: 2.19 },
+    { id: 'darkroast',  name: 'Dark roast',       emoji: '☕', price: 2.19 },
+    { id: 'latte',      name: 'Latte',            emoji: '🥛', price: 3.99 },
+    { id: 'capp',       name: 'Cappuccino',       emoji: '☕', price: 3.99 },
+    { id: 'frvanilla',  name: 'French vanilla',   emoji: '🍦', price: 2.79 },
+    { id: 'tea',        name: 'Steeped tea',      emoji: '🍵', price: 1.99 },
+    { id: 'iced',       name: 'Iced coffee',      emoji: '🧊', price: 2.79 },
+    { id: 'icedcapp',   name: 'Iced cappuccino',  emoji: '❄️', price: 3.49 },
+    { id: 'hotchoc',    name: 'Hot chocolate',    emoji: '🍫', price: 2.79 },
+    { id: 'americano',  name: 'Americano',        emoji: '☕', price: 2.99 }
   ];
   const SIZES = ['S', 'M', 'L', 'XL'];
-  // Size multipliers applied to the base drink price
-  const SIZE_MULT = { S: 0.85, M: 1.0, L: 1.18, XL: 1.32 };
+  // Size multipliers applied to the base drink price (approximate spread)
+  const SIZE_MULT = { S: 0.92, M: 1.0, L: 1.14, XL: 1.23 };
 
   const FOODS = [
-    { id: 'wrap',     name: 'Breakfast wrap',  emoji: '🌯', price: 4.99 },
-    { id: 'donut',    name: 'Filled donut',    emoji: '🍩', price: 1.99 },
-    { id: 'bagel',    name: 'Bagel + cream',   emoji: '🥯', price: 3.49 },
-    { id: 'muffin',   name: 'Muffin',          emoji: '🧁', price: 2.49 },
-    { id: 'sandwich', name: 'Sandwich',        emoji: '🥪', price: 5.49 },
-    { id: 'hashbrown',name: 'Hash brown',      emoji: '🥔', price: 1.49 }
+    // Original IDs kept so any existing profile's saved usual still resolves
+    { id: 'wrap',         name: 'Breakfast wrap',    emoji: '🌯', price: 5.49 },
+    { id: 'donut',        name: 'Filled donut',      emoji: '🍩', price: 1.69 },
+    { id: 'bagel',        name: 'Bagel + cream',     emoji: '🥯', price: 3.29 },
+    { id: 'muffin',       name: 'Muffin',            emoji: '🧁', price: 2.19 },
+    { id: 'sandwich',     name: 'Egg & cheese',      emoji: '🥪', price: 4.49 },
+    { id: 'hashbrown',    name: 'Hash brown',        emoji: '🥔', price: 1.59 },
+    // New items — generic descriptive names; replace with brand-specific
+    // product names + prices when wiring to the live menu feed.
+    { id: 'donut-glazed', name: 'Glazed donut',      emoji: '🍩', price: 1.69 },
+    { id: 'donut-choc',   name: 'Chocolate donut',   emoji: '🍩', price: 1.69 },
+    { id: 'donut-holes',  name: 'Donut holes (10)',  emoji: '🍩', price: 2.99 },
+    { id: 'bagel-belt',   name: 'Bacon egg bagel',   emoji: '🥯', price: 5.79 },
+    { id: 'croissant',    name: 'Butter croissant',  emoji: '🥐', price: 2.49 }
+  ];
+
+  // Quick-pick combos — tapping one populates the entire usual in a single tap.
+  // Think of these as "starter routines" for new users who don't want to
+  // build their order chip-by-chip on the first run.
+  const QUICK_PICKS = [
+    {
+      id: 'pick-classic',
+      label: 'The Classic',
+      sub: 'Coffee · 2 cream 2 sugar + glazed donut',
+      emoji: '☕🍩',
+      drink: 'coffee', size: 'L', cream: 2, sugar: 2,
+      food: ['donut-glazed']
+    },
+    {
+      id: 'pick-commute',
+      label: 'Morning Run',
+      sub: 'Coffee + breakfast wrap',
+      emoji: '☕🌯',
+      drink: 'coffee', size: 'L', cream: 1, sugar: 1,
+      food: ['wrap']
+    },
+    {
+      id: 'pick-belt',
+      label: 'Bagel Lover',
+      sub: 'Latte + bacon egg bagel',
+      emoji: '🥛🥯',
+      drink: 'latte', size: 'M', cream: 0, sugar: 0,
+      food: ['bagel-belt']
+    },
+    {
+      id: 'pick-iced',
+      label: 'Iced & Easy',
+      sub: 'Iced cappuccino + hash brown',
+      emoji: '❄️🥔',
+      drink: 'icedcapp', size: 'M', cream: 0, sugar: 0,
+      food: ['hashbrown']
+    },
+    {
+      id: 'pick-light',
+      label: 'Light Start',
+      sub: 'Tea + muffin',
+      emoji: '🍵🧁',
+      drink: 'tea', size: 'M', cream: 0, sugar: 0,
+      food: ['muffin']
+    },
+    {
+      id: 'pick-share',
+      label: 'Office Share',
+      sub: 'French vanilla + donut holes',
+      emoji: '🍦🍩',
+      drink: 'frvanilla', size: 'L', cream: 0, sugar: 0,
+      food: ['donut-holes']
+    }
   ];
 
   const PLANS = [
@@ -1973,7 +2098,41 @@
     const content = h('div', { class: 'view-scroll pad col gap-16' });
 
     content.appendChild(h('h1', { class: 'title' }, 'Build your usual'));
-    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Pick once, repeat forever. We remember everything.'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Tap a quick pick to start fast, or build it yourself below.'));
+
+    // ===== Quick picks (combos) =====
+    // Selected when every field of the pick matches the current draft.
+    const matchesQuickPick = (qp) => (
+      qp.drink === draft.drink &&
+      qp.size === draft.size &&
+      qp.cream === draft.cream &&
+      qp.sugar === draft.sugar &&
+      qp.food.length === draft.food.length &&
+      qp.food.every(f => draft.food.includes(f))
+    );
+
+    const qpSec = h('div', { class: 'col gap-8' });
+    qpSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Quick picks'));
+    const qpRow = h('div', { class: 'quickpicks-row' });
+    QUICK_PICKS.forEach(qp => {
+      const card = h('button', {
+        class: 'quickpick' + (matchesQuickPick(qp) ? ' selected' : ''),
+        onclick: () => {
+          draft.drink = qp.drink;
+          draft.size = qp.size;
+          draft.cream = qp.cream;
+          draft.sugar = qp.sugar;
+          draft.food = qp.food.slice();
+          rerender();
+        }
+      });
+      card.appendChild(h('div', { class: 'quickpick-emoji' }, qp.emoji));
+      card.appendChild(h('div', { class: 'quickpick-label' }, qp.label));
+      card.appendChild(h('div', { class: 'quickpick-sub' }, qp.sub));
+      qpRow.appendChild(card);
+    });
+    qpSec.appendChild(qpRow);
+    content.appendChild(qpSec);
 
     // Drink section
     const drinkSec = h('div', { class: 'col gap-8' });
