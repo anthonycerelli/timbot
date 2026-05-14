@@ -1194,14 +1194,16 @@
   ];
 
   const DRINKS = [
-    { id: 'coffee',     name: 'Coffee',       emoji: '☕' },
-    { id: 'latte',      name: 'Latte',        emoji: '🥛' },
-    { id: 'tea',        name: 'Steeped Tea',  emoji: '🍵' },
-    { id: 'iced',       name: 'Iced Coffee',  emoji: '🧊' },
-    { id: 'capp',       name: 'Cappuccino',   emoji: '☕' },
-    { id: 'hotchoc',    name: 'Hot Chocolate', emoji: '🍫' }
+    { id: 'coffee',     name: 'Coffee',        emoji: '☕', price: 2.49 },
+    { id: 'latte',      name: 'Latte',         emoji: '🥛', price: 4.49 },
+    { id: 'tea',        name: 'Steeped Tea',   emoji: '🍵', price: 2.29 },
+    { id: 'iced',       name: 'Iced Coffee',   emoji: '🧊', price: 3.49 },
+    { id: 'capp',       name: 'Cappuccino',    emoji: '☕', price: 4.29 },
+    { id: 'hotchoc',    name: 'Hot Chocolate', emoji: '🍫', price: 3.49 }
   ];
   const SIZES = ['S', 'M', 'L', 'XL'];
+  // Size multipliers applied to the base drink price
+  const SIZE_MULT = { S: 0.85, M: 1.0, L: 1.18, XL: 1.32 };
 
   const FOODS = [
     { id: 'wrap',     name: 'Breakfast wrap',  emoji: '🌯', price: 4.99 },
@@ -1640,9 +1642,6 @@
       class: 'btn primary',
       onclick: () => navigate('signup', {}, { transition: 'right' })
     }, users.length ? 'Add another profile' : 'Set up TimBot →'));
-    if (!users.length) {
-      footer.appendChild(h('button', { class: 'link', onclick: () => toast('Saved for later 👋') }, "I'll do it later"));
-    }
     view.appendChild(footer);
 
     return view;
@@ -1806,9 +1805,12 @@
     view.appendChild(footer);
 
     function rerender() {
+      const scrollEl = view.querySelector('.view-scroll');
+      const top = scrollEl ? scrollEl.scrollTop : 0;
       const newView = views.onboard1();
-      newView.classList.add('view-enter-fade');
       app.replaceChild(newView, view);
+      const newScroll = newView.querySelector('.view-scroll');
+      if (newScroll) newScroll.scrollTop = top;
     }
 
     return view;
@@ -1933,63 +1935,111 @@
     view.appendChild(footer);
 
     function rerender() {
+      const scrollEl = view.querySelector('.view-scroll');
+      const top = scrollEl ? scrollEl.scrollTop : 0;
       const newView = views.onboard2();
-      newView.classList.add('view-enter-fade');
       app.replaceChild(newView, view);
+      const newScroll = newView.querySelector('.view-scroll');
+      if (newScroll) newScroll.scrollTop = top;
     }
 
     return view;
   };
 
-  // ---- ONBOARD STEP 3 — PLAN ----
+  // ---- ONBOARD STEP 3 — PLAN (auto-calculated from schedule + receipt) ----
   views.onboard3 = () => {
     const u = currentUser();
     if (!u || !u.usual || !u.schedule) { navigate('onboard1'); return h('div'); }
 
     const dayCount = u.schedule.days.filter(Boolean).length;
-    const suggested = PLANS.find(p => p.mornings >= dayCount) || PLANS[2];
-    if (!u.plan) u.plan = suggested.id;
+    const recommended = PLANS.find(p => p.mornings >= dayCount) || PLANS[PLANS.length - 1];
+    // Snap to recommended whenever the schedule changes (or on first arrival).
+    // After that, an explicit tap on a tier sets _planAutoset to a sentinel so we don't re-snap.
+    const scheduleKey = u.schedule.days.join(',');
+    if (!u.plan || u._planAutoset !== scheduleKey) {
+      u.plan = recommended.id;
+      u._planAutoset = scheduleKey;
+    }
     let selected = u.plan;
+    const selectedPlan = PLANS.find(p => p.id === selected) || recommended;
 
     const view = h('div', { class: 'view' });
     view.appendChild(statusBar());
     view.appendChild(topBar({ back: () => navigate('onboard2', {}, { transition: 'left' }), title: 'Step 3 of 3' }));
     view.appendChild(progress(3));
 
-    const content = h('div', { class: 'view-scroll pad col gap-16' });
+    const content = h('div', { class: 'view-scroll pad col gap-14' });
     content.appendChild(h('h1', { class: 'title' }, 'Lock in your week'));
-    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Pre-pay, save, no surprises. Cancel or pause anytime.'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } },
+      `We sized your bundle to the `, h('b', null, `${dayCount} morning${dayCount > 1 ? 's' : ''}`),
+      ` you picked. Adjust below if you want more flexibility.`
+    ));
 
-    const list = h('div', { class: 'col gap-10' });
+    // Schedule recap chip — connects to Step 2
+    const dayLabels = u.schedule.days.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean).join(' · ');
+    content.appendChild(h('div', {
+      class: 'card soft flex between center-y',
+      style: { padding: '12px 14px' }
+    },
+      h('div', { class: 'col gap-4', style: { flex: '1', minWidth: '0' } },
+        h('div', { class: 'tiny mute', style: { letterSpacing: '1px', textTransform: 'uppercase', fontWeight: '700' } }, 'Your schedule'),
+        h('div', { class: 'small', style: { fontWeight: '600' } }, dayLabels || '(none picked)'),
+        h('div', { class: 'tiny mute' }, formatTime(u.schedule.time) + ' · ' + (u.store?.split(',')[0] || ''))
+      ),
+      h('button', {
+        class: 'link',
+        style: { padding: '6px 8px', textDecoration: 'none', color: 'var(--accent)', fontWeight: '700' },
+        onclick: () => navigate('onboard2', {}, { transition: 'left' })
+      }, 'edit ›')
+    ));
+
+    // Plan selector — compact pills, recommended one tagged
+    const planRow = h('div', { class: 'flex gap-8' });
     PLANS.forEach(p => {
-      const tier = h('div', {
-        class: 'tier' + (selected === p.id ? ' selected' : ''),
-        onclick: () => { u.plan = p.id; selected = p.id; rerender(); }
-      });
-      if (p.popular) {
-        tier.appendChild(h('div', { class: 'ribbon' }, h('span', { class: 'badge' }, 'Most picked')));
-      } else if (p.mornings === 5) {
-        tier.appendChild(h('div', { class: 'ribbon' }, h('span', { class: 'badge outline' }, 'Best value')));
-      }
-      tier.appendChild(h('div', { class: 'num' }, String(p.mornings)));
-      tier.appendChild(h('div', { class: 'body' },
-        h('div', { class: 't1' }, `${p.mornings} mornings / week`),
-        h('div', { class: 't2' }, p.label),
-        h('div', { class: 'save' }, `Save $${p.save} vs. à la carte`)
-      ));
-      tier.appendChild(h('div', { class: 'price' },
-        h('div', { class: 'p1' }, '$' + p.weekly, h('small', null, '/wk')),
-        h('div', { class: 'p2' }, '$' + p.perMorning.toFixed(2) + ' / morning')
-      ));
-      list.appendChild(tier);
+      const isSelected = selected === p.id;
+      const isRecommended = p.id === recommended.id;
+      const pill = h('button', {
+        class: 'card card-press',
+        style: {
+          flex: '1', padding: '12px 6px', textAlign: 'center',
+          background: isSelected ? 'var(--accent-soft)' : 'var(--paper-card)',
+          border: isSelected ? '2px solid var(--accent)' : '2px solid transparent',
+          borderRadius: '14px',
+          position: 'relative'
+        },
+        onclick: () => {
+          u.plan = p.id;
+          selected = p.id;
+          rerender();
+        }
+      },
+        isRecommended ? h('div', {
+          style: {
+            position: 'absolute', top: '-9px', left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--ink)', color: '#fff8e8',
+            padding: '2px 8px', borderRadius: '999px',
+            fontSize: '9px', fontWeight: '800', letterSpacing: '1px'
+          }
+        }, 'YOUR FIT') : null,
+        h('div', {
+          style: {
+            fontWeight: '800', fontSize: '22px',
+            color: isSelected ? 'var(--accent)' : 'var(--ink)',
+            lineHeight: '1', marginTop: isRecommended ? '4px' : '0'
+          }
+        }, String(p.mornings)),
+        h('div', { class: 'tiny mute', style: { marginTop: '4px' } }, 'mornings/wk'),
+        h('div', {
+          class: 'small',
+          style: { fontWeight: '700', marginTop: '6px', color: isSelected ? 'var(--accent)' : 'var(--ink)' }
+        }, '$' + p.weekly)
+      );
+      planRow.appendChild(pill);
     });
-    content.appendChild(list);
+    content.appendChild(planRow);
 
-    if (dayCount > 0) {
-      content.appendChild(h('div', { class: 'small mute center mt-8' },
-        `You picked ${dayCount} morning${dayCount > 1 ? 's' : ''}; we recommend the ${suggested.mornings}-morning plan.`
-      ));
-    }
+    // Receipt — the value proposition
+    content.appendChild(buildReceiptCard(u, selectedPlan));
 
     view.appendChild(content);
 
@@ -1999,23 +2049,110 @@
       onclick: () => {
         u.plan = selected;
         u.onboarded = true;
-        // Auto-create today's order so the dashboard isn't empty
         startTodayOrder('scheduled');
         saveState();
         navigate('onboardDone', {}, { transition: 'up' });
       }
-    }, 'Start TimBot — $' + PLANS.find(p => p.id === selected).weekly + '/wk'));
+    }, 'Start TimBot — $' + selectedPlan.weekly + '/wk'));
     footer.appendChild(h('button', { class: 'link', onclick: () => toast('Pause or cancel from Settings anytime.') }, 'Cancel or pause anytime'));
     view.appendChild(footer);
 
     function rerender() {
+      const scrollEl = view.querySelector('.view-scroll');
+      const top = scrollEl ? scrollEl.scrollTop : 0;
       const newView = views.onboard3();
-      newView.classList.add('view-enter-fade');
       app.replaceChild(newView, view);
+      const newScroll = newView.querySelector('.view-scroll');
+      if (newScroll) newScroll.scrollTop = top;
     }
 
     return view;
   };
+
+  // ---- Receipt card ----
+  // Computes honest weekly math from the user's usual + selected plan.
+  // Multiplier = plan.mornings (what the bundle covers each week).
+  function buildReceiptCard(u, plan) {
+    const drink = DRINKS.find(d => d.id === u.usual.drink);
+    const sizeMult = SIZE_MULT[u.usual.size] || 1;
+    const drinkPrice = drink ? +(drink.price * sizeMult).toFixed(2) : 0;
+    const foodItems = (u.usual.food || []).map(fid => FOODS.find(f => f.id === fid)).filter(Boolean);
+
+    const N = plan.mornings;
+    const drinkLine = +(drinkPrice * N).toFixed(2);
+    const foodLines = foodItems.map(f => ({ name: f.name, unit: f.price, line: +(f.price * N).toFixed(2) }));
+    const subtotal = +(drinkLine + foodLines.reduce((s, l) => s + l.line, 0)).toFixed(2);
+    const bundle = plan.weekly;
+    const savings = +(subtotal - bundle).toFixed(2);
+    const perMorning = +(bundle / N).toFixed(2);
+
+    const card = h('div', { class: 'card lift', style: { padding: '18px 20px' } });
+
+    card.appendChild(h('div', { class: 'flex between center-y', style: { marginBottom: '10px' } },
+      h('div', { class: 'eyebrow' }, 'Your weekly bundle'),
+      h('span', { class: 'badge dark' }, `${N} ${N === 1 ? 'MORNING' : 'MORNINGS'}`)
+    ));
+
+    // Item rows
+    const items = h('div', { class: 'col', style: { gap: '8px' } });
+    items.appendChild(receiptLine(
+      `${u.usual.size} ${drink?.name || 'Drink'}`,
+      `${u.usual.cream}c · ${u.usual.sugar}s`,
+      drinkPrice, N, drinkLine
+    ));
+    foodLines.forEach(l => {
+      items.appendChild(receiptLine(l.name, null, l.unit, N, l.line));
+    });
+    if (foodItems.length === 0) {
+      items.appendChild(h('div', { class: 'tiny mute' }, 'Drink only — add food in step 1 if you want more in the bundle.'));
+    }
+    card.appendChild(items);
+
+    card.appendChild(h('hr', { class: 'hr-dashed' }));
+
+    // À la carte vs bundle
+    card.appendChild(h('div', { class: 'flex between center-y small' },
+      h('span', { class: 'mute' }, 'À la carte total'),
+      h('span', { style: { fontWeight: '600', color: 'var(--ink-soft)', textDecoration: 'line-through' } }, '$' + subtotal.toFixed(2))
+    ));
+    card.appendChild(h('div', { class: 'flex between center-y small mt-4' },
+      h('span', { class: 'mute' }, `TimBot bundle`),
+      h('span', { style: { fontWeight: '700' } }, '$' + bundle.toFixed(2))
+    ));
+
+    card.appendChild(h('hr', { class: 'hr-dashed' }));
+
+    // Big savings number
+    if (savings > 0) {
+      card.appendChild(h('div', { class: 'flex between center-y', style: { alignItems: 'baseline' } },
+        h('span', { style: { fontWeight: '700', fontSize: '15px' } }, 'You save'),
+        h('div', { style: { textAlign: 'right' } },
+          h('span', { style: { fontWeight: '800', fontSize: '26px', color: 'var(--accent)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
+          h('span', { style: { fontSize: '13px', color: 'var(--accent)', fontWeight: '600', marginLeft: '3px' } }, '/wk')
+        )
+      ));
+    } else {
+      card.appendChild(h('div', { class: 'small center mute' }, 'Bundle matches à la carte — extra mornings are free flex.'));
+    }
+    card.appendChild(h('div', { class: 'tiny mute mt-4 center' },
+      `That's $${perMorning.toFixed(2)} per morning · cancel or pause anytime`
+    ));
+
+    return card;
+  }
+
+  function receiptLine(name, opts, unitPrice, qty, lineTotal) {
+    return h('div', { class: 'flex between center-y', style: { gap: '8px' } },
+      h('div', { style: { flex: '1', minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+        h('span', { style: { fontWeight: '600', fontSize: '13px' } }, name),
+        opts ? h('span', { class: 'tiny mute' }, ' · ' + opts) : null
+      ),
+      h('div', { class: 'flex center-y gap-8', style: { flexShrink: '0' } },
+        h('span', { class: 'tiny mute', style: { minWidth: '24px', textAlign: 'right' } }, `× ${qty}`),
+        h('span', { style: { fontWeight: '700', fontSize: '13px', minWidth: '54px', textAlign: 'right' } }, '$' + lineTotal.toFixed(2))
+      )
+    );
+  }
 
   // ---- ONBOARD DONE (celebration screen) ----
   views.onboardDone = () => {
