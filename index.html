@@ -1100,6 +1100,40 @@
     text-transform: uppercase;
   }
 
+  /* ===== Category tabs (used in onboard1 drink/food sections) =====
+     Pill-shaped, horizontally scrollable on phones. The active tab is
+     filled with the soft paper colour and a thin ink border. */
+  .tab-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin: 2px -4px 0;
+    padding: 2px 4px 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-row::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1.5px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    background: var(--paper-2);
+    color: var(--ink);
+    border-color: var(--ink-faint);
+  }
+
   /* ===== Quick picks (onboard1 combo strip) =====
      Horizontal scroll of preset routines. Tapping a card populates the
      full "usual" in one go and highlights the matching card. */
@@ -1500,95 +1534,194 @@
     '#5b8f7a', '#8f5b5b'
   ];
 
-  // Prototype seed menu — generic, widely-recognizable QSR vocabulary.
-  // Prices are approximate GTA market figures for ballpark math, not official.
-  // Swap this seed for the operator's actual menu feed before launch.
-  const DRINKS = [
-    { id: 'coffee',     name: 'Coffee',           emoji: '☕', price: 2.19 },
-    { id: 'darkroast',  name: 'Dark roast',       emoji: '☕', price: 2.19 },
-    { id: 'latte',      name: 'Latte',            emoji: '🥛', price: 3.99 },
-    { id: 'capp',       name: 'Cappuccino',       emoji: '☕', price: 3.99 },
-    { id: 'frvanilla',  name: 'French vanilla',   emoji: '🍦', price: 2.79 },
-    { id: 'tea',        name: 'Steeped tea',      emoji: '🍵', price: 1.99 },
-    { id: 'iced',       name: 'Iced coffee',      emoji: '🧊', price: 2.79 },
-    { id: 'icedcapp',   name: 'Iced cappuccino',  emoji: '❄️', price: 3.49 },
-    { id: 'hotchoc',    name: 'Hot chocolate',    emoji: '🍫', price: 2.79 },
-    { id: 'americano',  name: 'Americano',        emoji: '☕', price: 2.99 }
+  // Prototype seed menu organized by category. Prices are approximate GTA
+  // market figures for ballpark math. Replace with the operator's official
+  // menu feed before launch.
+
+  const BUNDLE_TYPES = [
+    { id: 'morning', label: 'Morning',     emoji: '🌅', sub: 'Drink + breakfast'  },
+    { id: 'coffee',  label: 'Coffee run',  emoji: '☕', sub: 'Just a drink'        },
+    { id: 'lunch',   label: 'Lunch',       emoji: '🥪', sub: 'Sandwich + drink'   },
+    { id: 'treat',   label: 'Sweet treat', emoji: '🍩', sub: 'Drink + baked good' },
+    { id: 'share',   label: 'Share',       emoji: '🎁', sub: 'Timbits / cookies'  }
   ];
+
+  const DRINK_CATEGORIES = [
+    { id: 'coffee',    label: 'Coffee'      },
+    { id: 'specialty', label: 'Specialty'   },
+    { id: 'tea',       label: 'Tea'         },
+    { id: 'cold',      label: 'Iced & Cold' },
+    { id: 'other',     label: 'Other'       }
+  ];
+
+  const FOOD_CATEGORIES = [
+    { id: 'breakfast', label: 'Breakfast' },
+    { id: 'lunch',     label: 'Lunch'     },
+    { id: 'baked',     label: 'Baked'     },
+    { id: 'snack',     label: 'Snacks'    }
+  ];
+
+  const DRINKS = [
+    // Coffee
+    { id: 'coffee',     cat: 'coffee', name: 'Original Blend',  emoji: '☕', price: 2.19 },
+    { id: 'darkroast',  cat: 'coffee', name: 'Dark Roast',      emoji: '☕', price: 2.19 },
+    { id: 'decaf',      cat: 'coffee', name: 'Decaf',           emoji: '☕', price: 2.19 },
+    { id: 'iced',       cat: 'coffee', name: 'Iced Coffee',     emoji: '🧊', price: 2.79 },
+    { id: 'coldbrew',   cat: 'coffee', name: 'Cold Brew',       emoji: '🧊', price: 3.49 },
+
+    // Specialty
+    { id: 'frvanilla',  cat: 'specialty', name: 'French Vanilla', emoji: '🍦', price: 2.79 },
+    { id: 'latte',      cat: 'specialty', name: 'Latte',          emoji: '🥛', price: 3.99 },
+    { id: 'capp',       cat: 'specialty', name: 'Cappuccino',     emoji: '☕', price: 3.99 },
+    { id: 'americano',  cat: 'specialty', name: 'Americano',      emoji: '☕', price: 2.99 },
+    { id: 'espresso',   cat: 'specialty', name: 'Espresso',       emoji: '☕', price: 2.49 },
+    { id: 'mocha',      cat: 'specialty', name: 'Mocha',          emoji: '☕', price: 4.29 },
+
+    // Tea
+    { id: 'tea',        cat: 'tea', name: 'Steeped Tea',  emoji: '🍵', price: 1.99 },
+    { id: 'green',      cat: 'tea', name: 'Green Tea',    emoji: '🍵', price: 1.99 },
+    { id: 'peppermint', cat: 'tea', name: 'Peppermint',   emoji: '🍵', price: 1.99 },
+    { id: 'chamomile',  cat: 'tea', name: 'Chamomile',    emoji: '🍵', price: 1.99 },
+    { id: 'earlgrey',   cat: 'tea', name: 'Earl Grey',    emoji: '🍵', price: 1.99 },
+
+    // Iced & Cold
+    { id: 'icedcapp',           cat: 'cold', name: 'Iced Capp',                emoji: '❄️', price: 3.49 },
+    { id: 'icedcapp-caramel',   cat: 'cold', name: 'Iced Capp Caramel',        emoji: '❄️', price: 3.79 },
+    { id: 'icedcapp-vanilla',   cat: 'cold', name: 'Iced Capp Vanilla',        emoji: '❄️', price: 3.79 },
+    { id: 'icedcapp-espresso',  cat: 'cold', name: 'Iced Capp Espresso',       emoji: '❄️', price: 3.79 },
+    { id: 'iced-latte',         cat: 'cold', name: 'Iced Latte',               emoji: '❄️', price: 4.29 },
+    { id: 'iced-macchiato',     cat: 'cold', name: 'Iced Macchiato',           emoji: '❄️', price: 4.49 },
+    { id: 'quencher',           cat: 'cold', name: 'Strawberry Quencher',      emoji: '🍓', price: 3.49 },
+    { id: 'sparkling',          cat: 'cold', name: 'Sparkling Quencher',       emoji: '🥤', price: 3.79 },
+    { id: 'frozen-lemonade',    cat: 'cold', name: 'Frozen Lemonade',          emoji: '🍋', price: 3.49 },
+    { id: 'frozen-choc',        cat: 'cold', name: 'Frozen Chocolate',         emoji: '🍫', price: 3.79 },
+
+    // Other
+    { id: 'hotchoc',    cat: 'other', name: 'Hot Chocolate',          emoji: '🍫', price: 2.79 },
+    { id: 'whitechoc',  cat: 'other', name: 'White Hot Chocolate',    emoji: '🤍', price: 2.99 },
+    { id: 'water',      cat: 'other', name: 'Bottled Water',          emoji: '💧', price: 1.99, noSize: true },
+    { id: 'juice',      cat: 'other', name: 'Bottled Juice',          emoji: '🧃', price: 2.49, noSize: true },
+    { id: 'milk',       cat: 'other', name: 'Milk',                   emoji: '🥛', price: 1.99, noSize: true },
+    { id: 'chocmilk',   cat: 'other', name: 'Chocolate Milk',         emoji: '🥛', price: 2.29, noSize: true }
+  ];
+
   const SIZES = ['S', 'M', 'L', 'XL'];
   // Size multipliers applied to the base drink price (approximate spread)
   const SIZE_MULT = { S: 0.92, M: 1.0, L: 1.14, XL: 1.23 };
 
   const FOODS = [
-    // Original IDs kept so any existing profile's saved usual still resolves
-    { id: 'wrap',         name: 'Breakfast wrap',    emoji: '🌯', price: 5.49 },
-    { id: 'donut',        name: 'Filled donut',      emoji: '🍩', price: 1.69 },
-    { id: 'bagel',        name: 'Bagel + cream',     emoji: '🥯', price: 3.29 },
-    { id: 'muffin',       name: 'Muffin',            emoji: '🧁', price: 2.19 },
-    { id: 'sandwich',     name: 'Egg & cheese',      emoji: '🥪', price: 4.49 },
-    { id: 'hashbrown',    name: 'Hash brown',        emoji: '🥔', price: 1.59 },
-    // New items — generic descriptive names; replace with brand-specific
-    // product names + prices when wiring to the live menu feed.
-    { id: 'donut-glazed', name: 'Glazed donut',      emoji: '🍩', price: 1.69 },
-    { id: 'donut-choc',   name: 'Chocolate donut',   emoji: '🍩', price: 1.69 },
-    { id: 'donut-holes',  name: 'Donut holes (10)',  emoji: '🍩', price: 2.99 },
-    { id: 'bagel-belt',   name: 'Bacon egg bagel',   emoji: '🥯', price: 5.79 },
-    { id: 'croissant',    name: 'Butter croissant',  emoji: '🥐', price: 2.49 }
+    // Breakfast (served until 12 PM)
+    // Old IDs (wrap, sandwich, bagel, muffin, hashbrown, donut) kept verbatim
+    // so any profile saved before this update still resolves.
+    { id: 'wrap',             cat: 'breakfast', name: "Farmer's Breakfast Wrap",   emoji: '🌯', price: 5.49 },
+    { id: 'sandwich',         cat: 'breakfast', name: 'Egg & Cheese',              emoji: '🥪', price: 4.49 },
+    { id: 'sandwich-bacon',   cat: 'breakfast', name: 'Bacon, Egg & Cheese',       emoji: '🥪', price: 5.49 },
+    { id: 'sandwich-saus',    cat: 'breakfast', name: 'Sausage, Egg & Cheese',     emoji: '🥪', price: 5.49 },
+    { id: 'sandwich-double',  cat: 'breakfast', name: 'Double Stacked Breakfast',  emoji: '🥪', price: 6.99 },
+    { id: 'bagel',            cat: 'breakfast', name: 'Bagel + cream cheese',      emoji: '🥯', price: 3.29 },
+    { id: 'belt',             cat: 'breakfast', name: 'Bagel BELT',                emoji: '🥯', price: 5.79 },
+    { id: 'hashbrown',        cat: 'breakfast', name: 'Hash brown',                emoji: '🥔', price: 1.59 },
+    { id: 'omelet-bites',     cat: 'breakfast', name: 'Spinach Egg White Bites',   emoji: '🥚', price: 3.99 },
+    { id: 'english-muffin',   cat: 'breakfast', name: 'English Muffin',            emoji: '🍞', price: 2.49 },
+    { id: 'biscuit',          cat: 'breakfast', name: 'Biscuit',                   emoji: '🥖', price: 2.49 },
+
+    // Lunch & Dinner
+    { id: 'turkey-club',      cat: 'lunch', name: 'Turkey Bacon Club',           emoji: '🥪', price: 8.99 },
+    { id: 'grilled-chicken',  cat: 'lunch', name: 'Honey Mustard Chicken',       emoji: '🥪', price: 8.99 },
+    { id: 'crispy-chicken',   cat: 'lunch', name: 'Buffalo Crispy Chicken',      emoji: '🥪', price: 8.49 },
+    { id: 'chicken-wrap',     cat: 'lunch', name: 'Slow-Cooked Chicken Wrap',    emoji: '🌯', price: 7.49 },
+    { id: 'loaded-bowl',      cat: 'lunch', name: 'Loaded Bowl',                 emoji: '🍲', price: 8.49 },
+    { id: 'chili',            cat: 'lunch', name: 'Chicken Chili',               emoji: '🍲', price: 6.49 },
+    { id: 'chili-bowl',       cat: 'lunch', name: 'Chili in bread bowl',         emoji: '🍲', price: 7.49 },
+    { id: 'soup-chicken',     cat: 'lunch', name: 'Chicken Noodle Soup',         emoji: '🍜', price: 5.49 },
+    { id: 'soup-broccoli',    cat: 'lunch', name: 'Broccoli Cheddar Soup',       emoji: '🍜', price: 5.49 },
+    { id: 'pizza-cheese',     cat: 'lunch', name: 'Cheese Flatbread',            emoji: '🍕', price: 6.99 },
+    { id: 'pizza-pepperoni',  cat: 'lunch', name: 'Pepperoni Flatbread',         emoji: '🍕', price: 7.49 },
+    { id: 'pizza-chicken',    cat: 'lunch', name: 'Chicken Parm Flatbread',      emoji: '🍕', price: 7.99 },
+    { id: 'pizza-bacon',      cat: 'lunch', name: 'Bacon Everything Flatbread',  emoji: '🍕', price: 7.99 },
+
+    // Baked — donuts + Timbits
+    { id: 'donut',            cat: 'baked', name: 'Filled Donut',         emoji: '🍩', price: 1.69 },
+    { id: 'donut-boston',     cat: 'baked', name: 'Boston Cream',         emoji: '🍩', price: 1.69 },
+    { id: 'donut-honey',      cat: 'baked', name: 'Honey Cruller',        emoji: '🍩', price: 1.69 },
+    { id: 'donut-apple',      cat: 'baked', name: 'Apple Fritter',        emoji: '🍩', price: 1.69 },
+    { id: 'donut-dutchie',    cat: 'baked', name: 'Dutchie',              emoji: '🍩', price: 1.69 },
+    { id: 'donut-double',     cat: 'baked', name: 'Double Chocolate',     emoji: '🍩', price: 1.69 },
+    { id: 'donut-strawberry', cat: 'baked', name: 'Strawberry Vanilla',   emoji: '🍩', price: 1.69 },
+    { id: 'timbits-10',       cat: 'baked', name: '10 Timbits',           emoji: '🍩', price: 2.99 },
+    { id: 'timbits-20',       cat: 'baked', name: '20 Timbits',           emoji: '🍩', price: 4.99 },
+    { id: 'timbits-50',       cat: 'baked', name: '50 Timbits',           emoji: '🍩', price: 9.99 },
+
+    // Snacks
+    { id: 'muffin',            cat: 'snack', name: 'Muffin',                  emoji: '🧁', price: 2.19 },
+    { id: 'muffin-blueberry',  cat: 'snack', name: 'Wild Blueberry Muffin',   emoji: '🫐', price: 2.19 },
+    { id: 'muffin-choc',       cat: 'snack', name: 'Chocolate Chip Muffin',   emoji: '🧁', price: 2.19 },
+    { id: 'muffin-strawberry', cat: 'snack', name: 'Strawberry Cheesecake',   emoji: '🍓', price: 2.49 },
+    { id: 'cookie-choc',       cat: 'snack', name: 'Chocolate Chunk Cookie',  emoji: '🍪', price: 1.99 },
+    { id: 'cookie-oatmeal',    cat: 'snack', name: 'Oatmeal Raisin Cookie',   emoji: '🍪', price: 1.99 },
+    { id: 'cookie-double',     cat: 'snack', name: 'Double Chocolate Cookie', emoji: '🍪', price: 1.99 },
+    { id: 'croissant',         cat: 'snack', name: 'Butter Croissant',        emoji: '🥐', price: 2.49 },
+    { id: 'brownie',           cat: 'snack', name: 'Chocolate Brownie',       emoji: '🍫', price: 2.49 },
+    { id: 'snacker',           cat: 'snack', name: 'Anytime Snacker',         emoji: '🥨', price: 3.49 }
   ];
 
-  // Quick-pick combos — tapping one populates the entire usual in a single tap.
-  // Think of these as "starter routines" for new users who don't want to
-  // build their order chip-by-chip on the first run.
+  // Quick-pick combos grouped by bundle type. Each maps a 1-tap selection
+  // to a fully-populated draft.
   const QUICK_PICKS = [
-    {
-      id: 'pick-classic',
-      label: 'The Classic',
-      sub: 'Coffee · 2 cream 2 sugar + glazed donut',
-      emoji: '☕🍩',
-      drink: 'coffee', size: 'L', cream: 2, sugar: 2,
-      food: ['donut-glazed']
-    },
-    {
-      id: 'pick-commute',
-      label: 'Morning Run',
-      sub: 'Coffee + breakfast wrap',
-      emoji: '☕🌯',
-      drink: 'coffee', size: 'L', cream: 1, sugar: 1,
-      food: ['wrap']
-    },
-    {
-      id: 'pick-belt',
-      label: 'Bagel Lover',
-      sub: 'Latte + bacon egg bagel',
-      emoji: '🥛🥯',
-      drink: 'latte', size: 'M', cream: 0, sugar: 0,
-      food: ['bagel-belt']
-    },
-    {
-      id: 'pick-iced',
-      label: 'Iced & Easy',
-      sub: 'Iced cappuccino + hash brown',
-      emoji: '❄️🥔',
-      drink: 'icedcapp', size: 'M', cream: 0, sugar: 0,
-      food: ['hashbrown']
-    },
-    {
-      id: 'pick-light',
-      label: 'Light Start',
-      sub: 'Tea + muffin',
-      emoji: '🍵🧁',
-      drink: 'tea', size: 'M', cream: 0, sugar: 0,
-      food: ['muffin']
-    },
-    {
-      id: 'pick-share',
-      label: 'Office Share',
-      sub: 'French vanilla + donut holes',
-      emoji: '🍦🍩',
-      drink: 'frvanilla', size: 'L', cream: 0, sugar: 0,
-      food: ['donut-holes']
-    }
+    // Morning Routine
+    { id: 'pick-classic',  bundle: 'morning', label: 'The Classic',  sub: 'Original Blend, 2 cream 2 sugar + Boston Cream',
+      emoji: '☕🍩', drink: 'coffee',    size: 'L', cream: 2, sugar: 2, food: ['donut-boston'] },
+    { id: 'pick-commute',  bundle: 'morning', label: 'Commuter',     sub: "Coffee + Farmer's wrap",
+      emoji: '☕🌯', drink: 'coffee',    size: 'L', cream: 1, sugar: 1, food: ['wrap'] },
+    { id: 'pick-hotstart', bundle: 'morning', label: 'Hot Start',    sub: 'Dark Roast + Bacon Egg & Cheese',
+      emoji: '☕🥪', drink: 'darkroast', size: 'L', cream: 1, sugar: 1, food: ['sandwich-bacon'] },
+    { id: 'pick-belt',     bundle: 'morning', label: 'Bagel Lover',  sub: 'Latte + Bagel BELT',
+      emoji: '🥛🥯', drink: 'latte',     size: 'M', cream: 0, sugar: 0, food: ['belt'] },
+
+    // Coffee Run (drink only)
+    { id: 'pick-dd',       bundle: 'coffee', label: 'Double-Double',  sub: 'Original Blend, 2 cream 2 sugar',
+      emoji: '☕', drink: 'coffee',    size: 'L', cream: 2, sugar: 2, food: [] },
+    { id: 'pick-black',    bundle: 'coffee', label: 'Just Black',     sub: 'Dark Roast, no sugar',
+      emoji: '☕', drink: 'darkroast', size: 'L', cream: 0, sugar: 0, food: [] },
+    { id: 'pick-iccap',    bundle: 'coffee', label: 'Iced Capp',      sub: 'Original Iced Capp',
+      emoji: '❄️', drink: 'icedcapp',  size: 'M', cream: 0, sugar: 0, food: [] },
+    { id: 'pick-frv',      bundle: 'coffee', label: 'French Vanilla', sub: 'Smooth + sweet',
+      emoji: '🍦', drink: 'frvanilla', size: 'L', cream: 0, sugar: 0, food: [] },
+
+    // Lunch Break
+    { id: 'pick-turkey',   bundle: 'lunch', label: 'Turkey Club',  sub: 'Turkey Bacon Club + tea',
+      emoji: '🥪', drink: 'tea',       size: 'L', cream: 0, sugar: 0, food: ['turkey-club'] },
+    { id: 'pick-soup',     bundle: 'lunch', label: 'Soup & Bread', sub: 'Broccoli Cheddar + biscuit',
+      emoji: '🍜', drink: 'tea',       size: 'M', cream: 0, sugar: 0, food: ['soup-broccoli', 'biscuit'] },
+    { id: 'pick-wrap',     bundle: 'lunch', label: 'Chicken Wrap', sub: 'Slow-cooked + Americano',
+      emoji: '🌯', drink: 'americano', size: 'M', cream: 0, sugar: 0, food: ['chicken-wrap'] },
+    { id: 'pick-pizza',    bundle: 'lunch', label: 'Flatbread',    sub: 'Pepperoni + iced coffee',
+      emoji: '🍕', drink: 'iced',      size: 'M', cream: 0, sugar: 0, food: ['pizza-pepperoni'] },
+
+    // Sweet Treat
+    { id: 'pick-mocha',    bundle: 'treat', label: 'Afternoon Pick-me-up', sub: 'Mocha + Apple Fritter',
+      emoji: '☕🍩', drink: 'mocha',     size: 'M', cream: 0, sugar: 0, food: ['donut-apple'] },
+    { id: 'pick-tea-muff', bundle: 'treat', label: 'Light Sweet',          sub: 'Tea + blueberry muffin',
+      emoji: '🍵🧁', drink: 'tea',       size: 'M', cream: 0, sugar: 0, food: ['muffin-blueberry'] },
+    { id: 'pick-cookie',   bundle: 'treat', label: 'Cookie Break',         sub: 'Latte + chocolate chunk',
+      emoji: '🥛🍪', drink: 'latte',     size: 'M', cream: 0, sugar: 0, food: ['cookie-choc'] },
+    { id: 'pick-frozen',   bundle: 'treat', label: 'Cool Down',            sub: 'Frozen Lemonade + brownie',
+      emoji: '🍋🍫', drink: 'frozen-lemonade', size: 'M', cream: 0, sugar: 0, food: ['brownie'] },
+
+    // Office Share
+    { id: 'pick-share-10', bundle: 'share', label: 'Quick Share',  sub: '10 Timbits + coffee',
+      emoji: '🍩', drink: 'coffee',    size: 'XL', cream: 0, sugar: 0, food: ['timbits-10'] },
+    { id: 'pick-share-20', bundle: 'share', label: 'Team Share',   sub: '20 Timbits + coffee',
+      emoji: '🍩', drink: 'coffee',    size: 'XL', cream: 1, sugar: 1, food: ['timbits-20'] },
+    { id: 'pick-share-50', bundle: 'share', label: 'Big Share',    sub: '50 Timbits',
+      emoji: '🎁', drink: 'coffee',    size: 'L', cream: 1, sugar: 1, food: ['timbits-50'] },
+    { id: 'pick-cookies',  bundle: 'share', label: 'Cookie Tray',  sub: 'Assorted cookies + tea',
+      emoji: '🍪', drink: 'tea',       size: 'L', cream: 0, sugar: 0, food: ['cookie-choc', 'cookie-oatmeal', 'cookie-double'] }
   ];
+
+  // Persists across rerenders within a single onboard1 session (UI only,
+  // not part of the saved draft).
+  const onboard1UI = { drinkCatView: null, foodCatView: null };
 
   const PLANS = [
     { id: '3', mornings: 3, weekly: 14, perMorning: 4.67, save: 3, label: 'Light routine · WFH-friendly' },
@@ -1868,9 +2001,12 @@
 
   function fmtOrderSummary(usual) {
     if (!usual) return '';
-    const drink = `${usual.size} ${DRINKS.find(d => d.id === usual.drink)?.name || 'Drink'}`;
+    const drinkItem = DRINKS.find(d => d.id === usual.drink);
+    const drinkName = drinkItem?.name || 'Drink';
+    const sizePart = drinkItem?.noSize ? '' : `${usual.size} `;
+    const drink = sizePart + drinkName;
     const food = usual.food && usual.food.length
-      ? ', ' + usual.food.map(f => FOODS.find(x => x.id === f)?.name.toLowerCase()).join(' + ')
+      ? ', ' + usual.food.map(f => FOODS.find(x => x.id === f)?.name.toLowerCase()).filter(Boolean).join(' + ')
       : '';
     return drink + food;
   }
@@ -2086,9 +2222,23 @@
     if (!u) { navigate('welcome'); return h('div'); }
 
     if (!u.usual) {
-      u.usual = { drink: 'coffee', size: 'L', cream: 2, sugar: 2, food: [] };
+      u.usual = { bundle: 'morning', drink: 'coffee', size: 'L', cream: 2, sugar: 2, food: [] };
     }
+    // Backfill bundle for profiles created before this update
+    if (!u.usual.bundle) u.usual.bundle = 'morning';
     const draft = u.usual;
+
+    // Derive which category tabs are "active" — explicit user view wins,
+    // otherwise fall back to the selected drink/food's category, then to
+    // a sensible default for the current bundle.
+    const currentDrink = DRINKS.find(d => d.id === draft.drink);
+    const drinkCatActive = onboard1UI.drinkCatView || currentDrink?.cat || 'coffee';
+    const firstFood = (draft.food || []).map(id => FOODS.find(f => f.id === id)).find(Boolean);
+    const bundleDefaultFoodCat = ({
+      morning: 'breakfast', coffee: 'breakfast', lunch: 'lunch',
+      treat:   'baked',     share:  'baked'
+    })[draft.bundle] || 'breakfast';
+    const foodCatActive = onboard1UI.foodCatView || firstFood?.cat || bundleDefaultFoodCat;
 
     const view = h('div', { class: 'view' });
     view.appendChild(statusBar());
@@ -2098,10 +2248,35 @@
     const content = h('div', { class: 'view-scroll pad col gap-16' });
 
     content.appendChild(h('h1', { class: 'title' }, 'Build your usual'));
-    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Tap a quick pick to start fast, or build it yourself below.'));
+    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } },
+      'Pick a bundle type, then tap a quick pick or fine-tune below.'));
 
-    // ===== Quick picks (combos) =====
-    // Selected when every field of the pick matches the current draft.
+    // ===== BUNDLE TYPE =====
+    const bundleSec = h('div', { class: 'col gap-8' });
+    bundleSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Bundle type'));
+    const bundleRow = h('div', { class: 'chip-row' });
+    BUNDLE_TYPES.forEach(b => {
+      bundleRow.appendChild(h('button', {
+        class: 'chip' + (draft.bundle === b.id ? ' on' : ''),
+        onclick: () => {
+          draft.bundle = b.id;
+          // Reset explicit category overrides so the bundle's defaults kick in
+          onboard1UI.drinkCatView = null;
+          onboard1UI.foodCatView = null;
+          // Coffee-run bundle: drop any food so we start clean
+          if (b.id === 'coffee') draft.food = [];
+          rerender();
+        }
+      }, `${b.emoji} ${b.label}`));
+    });
+    bundleSec.appendChild(bundleRow);
+    const activeBundle = BUNDLE_TYPES.find(b => b.id === draft.bundle);
+    if (activeBundle) {
+      bundleSec.appendChild(h('div', { class: 'tiny mute' }, activeBundle.sub));
+    }
+    content.appendChild(bundleSec);
+
+    // ===== Quick picks (filtered by bundle) =====
     const matchesQuickPick = (qp) => (
       qp.drink === draft.drink &&
       qp.size === draft.size &&
@@ -2111,105 +2286,148 @@
       qp.food.every(f => draft.food.includes(f))
     );
 
-    const qpSec = h('div', { class: 'col gap-8' });
-    qpSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Quick picks'));
-    const qpRow = h('div', { class: 'quickpicks-row' });
-    QUICK_PICKS.forEach(qp => {
-      const card = h('button', {
-        class: 'quickpick' + (matchesQuickPick(qp) ? ' selected' : ''),
-        onclick: () => {
-          draft.drink = qp.drink;
-          draft.size = qp.size;
-          draft.cream = qp.cream;
-          draft.sugar = qp.sugar;
-          draft.food = qp.food.slice();
-          rerender();
-        }
+    const picksForBundle = QUICK_PICKS.filter(qp => qp.bundle === draft.bundle);
+    if (picksForBundle.length > 0) {
+      const qpSec = h('div', { class: 'col gap-8' });
+      qpSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Quick picks'));
+      const qpRow = h('div', { class: 'quickpicks-row' });
+      picksForBundle.forEach(qp => {
+        const card = h('button', {
+          class: 'quickpick' + (matchesQuickPick(qp) ? ' selected' : ''),
+          onclick: () => {
+            draft.drink = qp.drink;
+            draft.size = qp.size;
+            draft.cream = qp.cream;
+            draft.sugar = qp.sugar;
+            draft.food = qp.food.slice();
+            onboard1UI.drinkCatView = null;
+            onboard1UI.foodCatView = null;
+            rerender();
+          }
+        });
+        card.appendChild(h('div', { class: 'quickpick-emoji' }, qp.emoji));
+        card.appendChild(h('div', { class: 'quickpick-label' }, qp.label));
+        card.appendChild(h('div', { class: 'quickpick-sub' }, qp.sub));
+        qpRow.appendChild(card);
       });
-      card.appendChild(h('div', { class: 'quickpick-emoji' }, qp.emoji));
-      card.appendChild(h('div', { class: 'quickpick-label' }, qp.label));
-      card.appendChild(h('div', { class: 'quickpick-sub' }, qp.sub));
-      qpRow.appendChild(card);
-    });
-    qpSec.appendChild(qpRow);
-    content.appendChild(qpSec);
+      qpSec.appendChild(qpRow);
+      content.appendChild(qpSec);
+    }
 
-    // Drink section
+    // ===== DRINK section with category tabs =====
     const drinkSec = h('div', { class: 'col gap-8' });
     drinkSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Drink'));
-    const drinkRow = h('div', { class: 'chip-row' });
-    DRINKS.forEach(d => {
-      const c = h('button', {
+
+    const drinkTabs = h('div', { class: 'tab-row' });
+    DRINK_CATEGORIES.forEach(c => {
+      drinkTabs.appendChild(h('button', {
+        class: 'tab' + (drinkCatActive === c.id ? ' active' : ''),
+        onclick: () => {
+          onboard1UI.drinkCatView = c.id;
+          // Auto-select the first drink in this category if current selection
+          // isn't there — keeps the chip row from looking empty.
+          const stillInCat = DRINKS.find(d => d.id === draft.drink)?.cat === c.id;
+          if (!stillInCat) {
+            const first = DRINKS.find(d => d.cat === c.id);
+            if (first) draft.drink = first.id;
+          }
+          rerender();
+        }
+      }, c.label));
+    });
+    drinkSec.appendChild(drinkTabs);
+
+    const drinksInCat = DRINKS.filter(d => d.cat === drinkCatActive);
+    const drinkChips = h('div', { class: 'chip-row' });
+    drinksInCat.forEach(d => {
+      drinkChips.appendChild(h('button', {
         class: 'chip' + (draft.drink === d.id ? ' on' : ''),
         onclick: () => { draft.drink = d.id; rerender(); }
-      }, `${d.emoji} ${d.name}`);
-      drinkRow.appendChild(c);
+      }, `${d.emoji} ${d.name}`));
     });
-    drinkSec.appendChild(drinkRow);
+    drinkSec.appendChild(drinkChips);
 
-    // Size
-    const sizeRow = h('div', { class: 'chip-row', style: { marginTop: '4px' } });
-    SIZES.forEach(s => {
-      sizeRow.appendChild(h('button', {
-        class: 'chip sm' + (draft.size === s ? ' on' : ''),
-        onclick: () => { draft.size = s; rerender(); }
-      }, s));
-    });
-    drinkSec.appendChild(sizeRow);
+    // Size (hidden for bottled / no-size drinks)
+    const selectedDrink = DRINKS.find(d => d.id === draft.drink);
+    if (selectedDrink && !selectedDrink.noSize) {
+      const sizeRow = h('div', { class: 'chip-row', style: { marginTop: '4px' } });
+      SIZES.forEach(s => {
+        sizeRow.appendChild(h('button', {
+          class: 'chip sm' + (draft.size === s ? ' on' : ''),
+          onclick: () => { draft.size = s; rerender(); }
+        }, s));
+      });
+      drinkSec.appendChild(sizeRow);
+    }
 
-    // Cream / Sugar
-    const csRow = h('div', { class: 'flex gap-8', style: { marginTop: '4px' } });
-    const stepper = (label, key) => {
-      const val = draft[key];
-      const wrap = h('div', { class: 'card soft', style: { flex: '1', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' } });
-      wrap.appendChild(h('div', { style: { fontSize: '12px', fontWeight: '600', color: 'var(--ink-soft)' } }, label));
-      const stp = h('div', { class: 'flex center-y gap-6' });
-      stp.appendChild(h('button', {
-        class: 'iconbtn',
-        style: { width: '26px', height: '26px', fontSize: '14px', background: 'var(--paper-card)' },
-        onclick: () => { draft[key] = Math.max(0, val - 1); rerender(); }
-      }, '−'));
-      stp.appendChild(h('span', { style: { fontWeight: '700', fontSize: '15px', minWidth: '14px', textAlign: 'center' } }, String(val)));
-      stp.appendChild(h('button', {
-        class: 'iconbtn',
-        style: { width: '26px', height: '26px', fontSize: '14px', background: 'var(--paper-card)' },
-        onclick: () => { draft[key] = Math.min(5, val + 1); rerender(); }
-      }, '+'));
-      wrap.appendChild(stp);
-      return wrap;
-    };
-    csRow.appendChild(stepper('Cream', 'cream'));
-    csRow.appendChild(stepper('Sugar', 'sugar'));
-    drinkSec.appendChild(csRow);
+    // Cream / Sugar — only meaningful for plain coffee category
+    if (selectedDrink && selectedDrink.cat === 'coffee') {
+      const csRow = h('div', { class: 'flex gap-8', style: { marginTop: '4px' } });
+      const stepper = (label, key) => {
+        const val = draft[key];
+        const wrap = h('div', { class: 'card soft', style: { flex: '1', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' } });
+        wrap.appendChild(h('div', { style: { fontSize: '12px', fontWeight: '600', color: 'var(--ink-soft)' } }, label));
+        const stp = h('div', { class: 'flex center-y gap-6' });
+        stp.appendChild(h('button', {
+          class: 'iconbtn',
+          style: { width: '26px', height: '26px', fontSize: '14px', background: 'var(--paper-card)' },
+          onclick: () => { draft[key] = Math.max(0, val - 1); rerender(); }
+        }, '−'));
+        stp.appendChild(h('span', { style: { fontWeight: '700', fontSize: '15px', minWidth: '14px', textAlign: 'center' } }, String(val)));
+        stp.appendChild(h('button', {
+          class: 'iconbtn',
+          style: { width: '26px', height: '26px', fontSize: '14px', background: 'var(--paper-card)' },
+          onclick: () => { draft[key] = Math.min(5, val + 1); rerender(); }
+        }, '+'));
+        wrap.appendChild(stp);
+        return wrap;
+      };
+      csRow.appendChild(stepper('Cream', 'cream'));
+      csRow.appendChild(stepper('Sugar', 'sugar'));
+      drinkSec.appendChild(csRow);
+    }
 
     content.appendChild(drinkSec);
 
-    // Food
-    const foodSec = h('div', { class: 'col gap-8' });
-    foodSec.appendChild(h('div', { class: 'flex between center-y' },
-      h('div', { class: 'eyebrow mute' }, 'Food (pick any)'),
-      h('div', { class: 'small mute' }, draft.food.length ? `${draft.food.length} added` : 'optional')
-    ));
-    const tg = h('div', { class: 'tile-grid' });
-    FOODS.forEach(f => {
-      const selected = draft.food.includes(f.id);
-      const tile = h('div', {
-        class: 'tile' + (selected ? ' selected' : ''),
-        onclick: () => {
-          if (selected) draft.food = draft.food.filter(x => x !== f.id);
-          else draft.food.push(f.id);
-          rerender();
-        }
-      },
-        h('div', { class: 'emoji' }, f.emoji),
-        h('div', { class: 'name' }, f.name),
-        h('div', { class: 'price' }, '$' + f.price.toFixed(2)),
-        h('div', { class: 'check' }, '✓')
-      );
-      tg.appendChild(tile);
-    });
-    foodSec.appendChild(tg);
-    content.appendChild(foodSec);
+    // ===== FOOD section (hidden for coffee-run bundle) =====
+    if (draft.bundle !== 'coffee') {
+      const foodSec = h('div', { class: 'col gap-8' });
+      foodSec.appendChild(h('div', { class: 'flex between center-y' },
+        h('div', { class: 'eyebrow mute' }, 'Food (pick any)'),
+        h('div', { class: 'small mute' }, draft.food.length ? `${draft.food.length} added` : 'optional')
+      ));
+
+      const foodTabs = h('div', { class: 'tab-row' });
+      FOOD_CATEGORIES.forEach(c => {
+        foodTabs.appendChild(h('button', {
+          class: 'tab' + (foodCatActive === c.id ? ' active' : ''),
+          onclick: () => { onboard1UI.foodCatView = c.id; rerender(); }
+        }, c.label));
+      });
+      foodSec.appendChild(foodTabs);
+
+      const foodsInCat = FOODS.filter(f => f.cat === foodCatActive);
+      const tg = h('div', { class: 'tile-grid' });
+      foodsInCat.forEach(f => {
+        const selected = draft.food.includes(f.id);
+        const tile = h('div', {
+          class: 'tile' + (selected ? ' selected' : ''),
+          onclick: () => {
+            if (selected) draft.food = draft.food.filter(x => x !== f.id);
+            else draft.food.push(f.id);
+            rerender();
+          }
+        },
+          h('div', { class: 'emoji' }, f.emoji),
+          h('div', { class: 'name' }, f.name),
+          h('div', { class: 'price' }, '$' + f.price.toFixed(2)),
+          h('div', { class: 'check' }, '✓')
+        );
+        tg.appendChild(tile);
+      });
+      foodSec.appendChild(tg);
+      content.appendChild(foodSec);
+    }
 
     view.appendChild(content);
 
@@ -2596,7 +2814,7 @@
   // Multiplier = plan.mornings (what the bundle covers each week).
   function buildReceiptCard(u, plan) {
     const drink = DRINKS.find(d => d.id === u.usual.drink);
-    const sizeMult = SIZE_MULT[u.usual.size] || 1;
+    const sizeMult = drink?.noSize ? 1 : (SIZE_MULT[u.usual.size] || 1);
     const drinkPrice = drink ? +(drink.price * sizeMult).toFixed(2) : 0;
     const foodItems = (u.usual.food || []).map(fid => FOODS.find(f => f.id === fid)).filter(Boolean);
 
@@ -2617,11 +2835,9 @@
 
     // Item rows — own container, breathes
     const items = h('div', { class: 'col' });
-    items.appendChild(receiptLine(
-      `${u.usual.size} ${drink?.name || 'Drink'}`,
-      `${u.usual.cream}c · ${u.usual.sugar}s`,
-      drinkPrice, N, drinkLine
-    ));
+    const drinkLabel = drink?.noSize ? (drink?.name || 'Drink') : `${u.usual.size} ${drink?.name || 'Drink'}`;
+    const drinkOpts = drink?.cat === 'coffee' ? `${u.usual.cream}c · ${u.usual.sugar}s` : null;
+    items.appendChild(receiptLine(drinkLabel, drinkOpts, drinkPrice, N, drinkLine));
     foodLines.forEach(l => {
       items.appendChild(receiptLine(l.name, null, l.unit, N, l.line));
     });
@@ -2979,8 +3195,10 @@
       if (foodEmojis.length) {
         itemRow.appendChild(h('div', { class: 'item-icon' }, foodEmojis[0]));
       }
+      const drinkLabel = drink?.noSize ? (drink?.name || 'Drink') : `${order.items.size} ${drink?.name || 'Drink'}`;
+      const drinkOpts = drink?.cat === 'coffee' ? `, ${order.items.cream} cream / ${order.items.sugar} sugar` : '';
       itemRow.appendChild(h('div', { style: { flex: '1', fontSize: '13px', lineHeight: '1.35' } },
-        h('div', { style: { fontWeight: '700' } }, `${order.items.size} ${drink?.name || 'Drink'}, ${order.items.cream} cream / ${order.items.sugar} sugar`),
+        h('div', { style: { fontWeight: '700' } }, drinkLabel + drinkOpts),
         h('div', { class: 'small mute' }, (order.items.food || []).map(f => FOODS.find(x => x.id === f)?.name).filter(Boolean).join(' · ') || 'Drink only')
       ));
       card.appendChild(itemRow);
@@ -3065,10 +3283,12 @@
 
     // Current items card
     const drink = DRINKS.find(d => d.id === order.items.drink);
+    const swapDrinkLabel = drink?.noSize ? (drink?.name || 'Drink') : `${order.items.size} ${drink?.name || 'Drink'}`;
+    const swapDrinkOpts = drink?.cat === 'coffee' ? `, ${order.items.cream} cream / ${order.items.sugar} sugar` : '';
     content.appendChild(h('div', { class: 'card flex center-y gap-10' },
       h('div', { class: 'item-icon acc', style: { width: '54px', height: '54px', fontSize: '24px' } }, drink?.emoji || '☕'),
       h('div', { style: { flex: '1', lineHeight: '1.35' } },
-        h('div', { style: { fontSize: '14px', fontWeight: '700' } }, `${order.items.size} ${drink?.name}, ${order.items.cream} cream / ${order.items.sugar} sugar`),
+        h('div', { style: { fontSize: '14px', fontWeight: '700' } }, swapDrinkLabel + swapDrinkOpts),
         h('div', { class: 'small mute' }, (order.items.food || []).map(f => FOODS.find(x => x.id === f)?.name.toLowerCase()).filter(Boolean).join(' + ') || 'Drink only')
       )
     ));
