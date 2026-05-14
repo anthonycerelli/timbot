@@ -36,6 +36,11 @@
     --success: #4d7a48;
     --success-soft: rgba(77, 122, 72, 0.14);
     --warn: #b6803a;
+    /* Receipt math semantics: red = money out, green = money saved */
+    --pay: #c8102e;
+    --pay-soft: rgba(200, 16, 46, 0.10);
+    --save: #2e7d32;
+    --save-soft: rgba(46, 125, 50, 0.12);
     --paper-card: #fffefa;
     --shadow-card: 0 2px 6px rgba(42, 36, 29, 0.06), 0 8px 20px rgba(42, 36, 29, 0.06);
     --shadow-lift: 0 6px 14px rgba(42, 36, 29, 0.10), 0 18px 36px rgba(42, 36, 29, 0.10);
@@ -473,6 +478,49 @@
     margin-bottom: 6px;
   }
   .field { display: flex; flex-direction: column; gap: 4px; }
+
+  /* Styled native <select> — looks like an .input with a chevron on the right */
+  .select-input {
+    width: 100%;
+    padding: 14px 44px 14px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--ink-faint);
+    background-color: var(--paper-card);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'><path d='M1 1l6 6 6-6' stroke='%23c25a30' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .select-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  /* Time chip — wraps a hidden <input type="time"> so tapping opens the
+     native picker without showing the platform's default input chrome. */
+  .chip-time {
+    position: relative;
+    overflow: hidden;
+  }
+  .chip-time input[type="time"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: transparent;
+    padding: 0;
+  }
 
   /* ===== Toggle ===== */
   .toggle {
@@ -1985,6 +2033,9 @@
   };
 
   // ---- ONBOARD STEP 2 — SCHEDULE ----
+  // Restructured as three clear sections: Days → Time → Location.
+  // Time uses tap-friendly preset chips for common commuter times,
+  // plus a "Custom" chip that wraps a hidden native time input.
   views.onboard2 = () => {
     const u = currentUser();
     if (!u || !u.usual) { navigate('onboard1'); return h('div'); }
@@ -1998,23 +2049,36 @@
       };
     }
     const draft = u.schedule;
+    const dayCount = draft.days.filter(Boolean).length;
 
     const view = h('div', { class: 'view' });
     view.appendChild(statusBar());
     view.appendChild(topBar({ back: () => navigate('onboard1', {}, { transition: 'left' }), title: 'Step 2 of 3' }));
     view.appendChild(progress(2));
 
-    const content = h('div', { class: 'view-scroll pad col gap-16' });
+    const content = h('div', { class: 'view-scroll pad col', style: { gap: '24px' } });
 
-    content.appendChild(h('h1', { class: 'title' }, 'Pick your week'));
-    content.appendChild(h('p', { class: 'sub', style: { marginTop: '-8px' } }, 'Which mornings should TimBot run?'));
+    // Title + sub (tight pair)
+    content.appendChild(h('div', { class: 'col', style: { gap: '6px' } },
+      h('h1', { class: 'title', style: { margin: 0 } }, 'Pick your week'),
+      h('p', { class: 'sub', style: { margin: 0 } }, 'Set when and where. Tweak anything later.')
+    ));
 
-    // Week grid
+    // ===== SECTION 1: DAYS =====
+    const daysSec = h('div', { class: 'col', style: { gap: '12px' } });
+    daysSec.appendChild(h('div', { class: 'flex between center-y' },
+      h('div', { class: 'eyebrow mute' }, 'Mornings'),
+      h('div', {
+        class: 'tiny',
+        style: { fontWeight: '700', color: dayCount > 0 ? 'var(--accent)' : 'var(--ink-mute)' }
+      }, dayCount === 0 ? 'pick at least one' : `${dayCount} selected`)
+    ));
+
     const today = new Date();
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
 
-    const wg = h('div', { class: 'weekgrid mt-8' });
+    const wg = h('div', { class: 'weekgrid' });
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
@@ -2028,37 +2092,49 @@
       );
       wg.appendChild(c);
     }
-    content.appendChild(wg);
+    daysSec.appendChild(wg);
+    content.appendChild(daysSec);
 
-    // Default time + toggle
-    const timeCard = h('div', { class: 'card soft col gap-10 mt-8' });
-    const headRow = h('div', { class: 'flex between center-y gap-12' },
-      h('div', { class: 'col gap-4', style: { flex: '1' } },
-        h('div', { style: { fontWeight: '700', fontSize: '14px' } }, 'Default pickup'),
-        h('div', { class: 'small mute' }, 'Applies to all selected days')
-      ),
-      h('div', { class: 'time-pill', style: { padding: '8px 12px', border: 'none', background: 'var(--paper-card)' } },
-        h('input', {
-          type: 'time',
-          value: draft.time,
-          onchange: (e) => { draft.time = e.target.value; rerender(); }
-        })
+    // ===== SECTION 2: TIME =====
+    const timeSec = h('div', { class: 'col', style: { gap: '12px' } });
+    timeSec.appendChild(h('div', { class: 'flex between center-y' },
+      h('div', { class: 'eyebrow mute' }, 'Pickup time'),
+      h('div', { class: 'tiny mute' },
+        draft.perDay ? 'set per day' : 'all days at ' + formatTime(draft.time)
       )
-    );
-    timeCard.appendChild(headRow);
-    timeCard.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '0' } }));
-    const toggleRow = h('div', { class: 'flex between center-y' },
-      h('div', { class: 'small' }, 'Set a different time per day'),
-      h('div', { class: 'toggle' + (draft.perDay ? ' on' : ''), onclick: () => { draft.perDay = !draft.perDay; rerender(); } })
-    );
-    timeCard.appendChild(toggleRow);
-    content.appendChild(timeCard);
+    ));
 
-    // Per-day rows
-    if (draft.perDay) {
-      const perDay = h('div', { class: 'col gap-6 mt-8' });
+    if (!draft.perDay) {
+      // Common commuter times as chips
+      const COMMON_TIMES = ['06:30', '07:00', '07:30', '08:00', '08:15', '08:30', '09:00'];
+      const customSelected = !COMMON_TIMES.includes(draft.time);
+
+      const timeRow = h('div', { class: 'chip-row' });
+      COMMON_TIMES.forEach(t => {
+        timeRow.appendChild(h('button', {
+          class: 'chip' + (draft.time === t ? ' on' : ''),
+          onclick: () => { draft.time = t; rerender(); }
+        }, fmtClock24(t)));
+      });
+      // Custom chip — label wraps a hidden time input
+      const customChip = h('label', {
+        class: 'chip chip-time' + (customSelected ? ' on' : '')
+      });
+      customChip.appendChild(h('span', null, customSelected ? fmtClock24(draft.time) : 'Other'));
+      customChip.appendChild(h('input', {
+        type: 'time',
+        value: draft.time,
+        onchange: (e) => { if (e.target.value) { draft.time = e.target.value; rerender(); } }
+      }));
+      timeRow.appendChild(customChip);
+      timeSec.appendChild(timeRow);
+    } else {
+      // Per-day inputs
+      const perDay = h('div', { class: 'col gap-6' });
+      let any = false;
       for (let i = 0; i < 7; i++) {
         if (!draft.days[i]) continue;
+        any = true;
         const row = h('div', { class: 'time-pill' },
           h('span', { class: 'label' }, DAY_NAMES_LONG[i]),
           h('input', {
@@ -2069,27 +2145,49 @@
         );
         perDay.appendChild(row);
       }
-      content.appendChild(perDay);
+      if (!any) {
+        perDay.appendChild(h('div', { class: 'tiny mute center', style: { padding: '12px' } },
+          'Select some days above first.'
+        ));
+      }
+      timeSec.appendChild(perDay);
     }
 
-    // Store
-    const storeSec = h('div', { class: 'col gap-6 mt-8' });
-    storeSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Pickup location'));
+    // Discreet advanced toggle below the time row
+    timeSec.appendChild(h('button', {
+      class: 'flex between center-y',
+      style: {
+        background: 'transparent', border: 'none', padding: '6px 2px',
+        cursor: 'pointer', width: '100%', textAlign: 'left'
+      },
+      onclick: () => { draft.perDay = !draft.perDay; rerender(); }
+    },
+      h('div', { class: 'col', style: { gap: '2px' } },
+        h('div', { class: 'small', style: { fontWeight: '600' } }, 'Different time per day'),
+        h('div', { class: 'tiny mute' }, draft.perDay ? 'Using per-day times' : 'Useful if your commute varies')
+      ),
+      h('div', { class: 'toggle' + (draft.perDay ? ' on' : '') })
+    ));
+
+    content.appendChild(timeSec);
+
+    // ===== SECTION 3: LOCATION =====
+    const locSec = h('div', { class: 'col', style: { gap: '12px' } });
+    locSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Pickup location'));
     const storeSel = h('select', {
-      class: 'input',
+      class: 'select-input',
       onchange: (e) => { u.store = e.target.value; saveState(); }
     });
     STORES.forEach(s => {
       const o = h('option', { value: s }, s);
-      if (u.store === s) o.setAttribute('selected', '');
+      if ((u.store || STORES[0]) === s) o.setAttribute('selected', '');
       storeSel.appendChild(o);
     });
-    storeSec.appendChild(storeSel);
-    content.appendChild(storeSec);
+    locSec.appendChild(storeSel);
+    content.appendChild(locSec);
 
     view.appendChild(content);
 
-    const dayCount = draft.days.filter(Boolean).length;
     const footer = h('div', { class: 'footer-cta' });
     footer.appendChild(h('button', {
       class: 'btn primary',
@@ -2113,6 +2211,12 @@
 
     return view;
   };
+
+  // "08:15" → "8:15" (no AM/PM, since the section header says morning)
+  function fmtClock24(t24) {
+    const [h, m] = t24.split(':').map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
+  }
 
   // ---- ONBOARD STEP 3 — PLAN (auto-calculated from schedule + receipt) ----
   views.onboard3 = () => {
@@ -2260,33 +2364,59 @@
     }
     card.appendChild(items);
 
-    card.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '10px 0' } }));
+    card.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '12px 0' } }));
 
-    // À la carte vs bundle
-    card.appendChild(h('div', { class: 'flex between center-y small', style: { padding: '3px 0' } },
-      h('span', { class: 'mute' }, 'À la carte total'),
-      h('span', { style: { fontWeight: '600', color: 'var(--ink-soft)', textDecoration: 'line-through' } }, '$' + subtotal.toFixed(2))
-    ));
-    card.appendChild(h('div', { class: 'flex between center-y small', style: { padding: '3px 0' } },
-      h('span', { class: 'mute' }, `TimBot bundle`),
-      h('span', { style: { fontWeight: '700' } }, '$' + bundle.toFixed(2))
+    // "Without TimBot" — the avoided cost (struck through)
+    card.appendChild(h('div', { class: 'flex between center-y', style: { padding: '4px 0', fontSize: '13px' } },
+      h('span', { class: 'mute' }, 'Without TimBot'),
+      h('span', { style: { fontWeight: '600', color: 'var(--ink-mute)', textDecoration: 'line-through' } }, '$' + subtotal.toFixed(2))
     ));
 
-    card.appendChild(h('hr', { class: 'hr-dashed', style: { margin: '10px 0 14px' } }));
+    // "You pay" — the actual cost, in red so it reads as money out
+    card.appendChild(h('div', {
+      class: 'flex between center-y',
+      style: {
+        padding: '10px 12px',
+        marginTop: '6px',
+        background: 'var(--pay-soft)',
+        borderRadius: '10px'
+      }
+    },
+      h('span', { style: { fontWeight: '700', fontSize: '14px', color: 'var(--pay)' } }, 'You pay'),
+      h('span', { style: { fontWeight: '800', fontSize: '17px', color: 'var(--pay)' } },
+        '$' + bundle.toFixed(2),
+        h('span', { style: { fontSize: '12px', fontWeight: '600', marginLeft: '2px' } }, '/wk')
+      )
+    ));
 
-    // Big savings row
+    // "You save" — the hero number, in green
     if (savings > 0) {
-      card.appendChild(h('div', { class: 'flex between', style: { alignItems: 'baseline' } },
-        h('span', { style: { fontWeight: '700', fontSize: '16px' } }, 'You save'),
+      card.appendChild(h('div', {
+        class: 'flex between',
+        style: {
+          alignItems: 'center',
+          padding: '14px 14px',
+          marginTop: '8px',
+          background: 'var(--save-soft)',
+          borderRadius: '12px'
+        }
+      },
+        h('div', { class: 'col', style: { gap: '2px' } },
+          h('div', { style: { fontWeight: '800', fontSize: '15px', color: 'var(--save)' } }, 'You save'),
+          h('div', { class: 'tiny', style: { color: 'var(--save)', opacity: '0.8', fontWeight: '600' } }, 'every week')
+        ),
         h('div', { style: { textAlign: 'right', lineHeight: '1' } },
-          h('span', { style: { fontWeight: '800', fontSize: '28px', color: 'var(--accent)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
-          h('span', { style: { fontSize: '13px', color: 'var(--accent)', fontWeight: '700', marginLeft: '3px' } }, '/wk')
+          h('span', { style: { fontWeight: '800', fontSize: '30px', color: 'var(--save)', letterSpacing: '-0.5px' } }, '$' + savings.toFixed(2)),
+          h('span', { style: { fontSize: '13px', color: 'var(--save)', fontWeight: '700', marginLeft: '3px' } }, '/wk')
         )
       ));
     } else {
-      card.appendChild(h('div', { class: 'small center mute' }, 'Bundle matches à la carte — extra mornings are free flex.'));
+      card.appendChild(h('div', { class: 'small center mute', style: { marginTop: '8px' } },
+        'Bundle matches à la carte — extra mornings are free flex.'
+      ));
     }
-    card.appendChild(h('div', { class: 'tiny mute center', style: { marginTop: '10px' } },
+
+    card.appendChild(h('div', { class: 'tiny mute center', style: { marginTop: '12px' } },
       `That's $${perMorning.toFixed(2)} per morning · cancel or pause anytime`
     ));
 
