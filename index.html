@@ -2237,7 +2237,7 @@
         row.appendChild(h('div', { class: 'avatar', style: { background: u.color } }, u.initials));
         row.appendChild(h('div', { class: 'info' },
           h('div', { class: 'nm' }, displayName(u)),
-          h('div', { class: 'meta' }, u.onboarded ? `${u.plan || '?'} mornings/wk · ${u.store?.split(',')[0] || ''}` : 'Setup in progress…')
+          h('div', { class: 'meta' }, u.onboarded ? `${u.schedule?.days?.filter(Boolean).length || 0} mornings/wk · ${u.store?.split(',')[0] || ''}` : 'Setup in progress…')
         ));
         row.appendChild(h('span', { class: 'chev' }, '›'));
         usersCard.appendChild(row);
@@ -2370,44 +2370,6 @@
       bundleSec.appendChild(h('div', { class: 'tiny mute' }, activeBundle.sub));
     }
     content.appendChild(bundleSec);
-
-    // ===== Quick picks (filtered by bundle) =====
-    const matchesQuickPick = (qp) => (
-      qp.drink === draft.drink &&
-      qp.size === draft.size &&
-      qp.cream === draft.cream &&
-      qp.sugar === draft.sugar &&
-      qp.food.length === draft.food.length &&
-      qp.food.every(f => draft.food.includes(f))
-    );
-
-    const picksForBundle = QUICK_PICKS.filter(qp => qp.bundle === draft.bundle);
-    if (picksForBundle.length > 0) {
-      const qpSec = h('div', { class: 'col gap-8' });
-      qpSec.appendChild(h('div', { class: 'eyebrow mute' }, 'Quick picks'));
-      const qpRow = h('div', { class: 'quickpicks-row' });
-      picksForBundle.forEach(qp => {
-        const card = h('button', {
-          class: 'quickpick' + (matchesQuickPick(qp) ? ' selected' : ''),
-          onclick: () => {
-            draft.drink = qp.drink;
-            draft.size = qp.size;
-            draft.cream = qp.cream;
-            draft.sugar = qp.sugar;
-            draft.food = qp.food.slice();
-            onboard1UI.drinkCatView = null;
-            onboard1UI.foodCatView = null;
-            rerender();
-          }
-        });
-        card.appendChild(h('div', { class: 'quickpick-emoji' }, qp.emoji));
-        card.appendChild(h('div', { class: 'quickpick-label' }, qp.label));
-        card.appendChild(h('div', { class: 'quickpick-sub' }, qp.sub));
-        qpRow.appendChild(card);
-      });
-      qpSec.appendChild(qpRow);
-      content.appendChild(qpSec);
-    }
 
     // ===== DRINK section with category tabs =====
     const drinkSec = h('div', { class: 'col gap-8' });
@@ -2861,22 +2823,13 @@
     return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
   }
 
-  // ---- ONBOARD STEP 3 — PLAN (auto-calculated from schedule + receipt) ----
+  // ---- ONBOARD STEP 3 — Subscription receipt (30% off, calculated from steps 1+2) ----
   views.onboard3 = () => {
     const u = currentUser();
     if (!u || !u.usual || !u.schedule) { navigate('onboard1'); return h('div'); }
 
     const dayCount = u.schedule.days.filter(Boolean).length;
-    const recommended = PLANS.find(p => p.mornings >= dayCount) || PLANS[PLANS.length - 1];
-    // Snap to recommended whenever the schedule changes (or on first arrival).
-    // After that, an explicit tap on a tier sets _planAutoset to a sentinel so we don't re-snap.
-    const scheduleKey = u.schedule.days.join(',');
-    if (!u.plan || u._planAutoset !== scheduleKey) {
-      u.plan = recommended.id;
-      u._planAutoset = scheduleKey;
-    }
-    let selected = u.plan;
-    const selectedPlan = PLANS.find(p => p.id === selected) || recommended;
+    const { bundle: ctaBundle } = bundleMath(u);
 
     const view = h('div', { class: 'view' });
     view.appendChild(statusBar());
@@ -2889,8 +2842,9 @@
     content.appendChild(h('div', { class: 'col', style: { gap: '8px' } },
       h('h1', { class: 'title', style: { margin: '0' } }, 'Lock in your week'),
       h('p', { class: 'sub', style: { margin: '0' } },
-        `We sized your bundle to the `, h('b', null, `${dayCount} morning${dayCount > 1 ? 's' : ''}`),
-        ` you picked. Adjust below if you want more flexibility.`
+        `${dayCount} morning${dayCount > 1 ? 's' : ''} of your usual, every week — `,
+        h('b', null, '30% off'),
+        '. Cancel or pause anytime.'
       )
     ));
 
@@ -2912,34 +2866,8 @@
       }, 'edit ›')
     ));
 
-    // Plan selector — compact pills, recommended one tagged
-    const planRow = h('div', { class: 'flex gap-8' });
-    PLANS.forEach(p => {
-      const isSelected = selected === p.id;
-      const isRecommended = p.id === recommended.id;
-      const pill = h('button', {
-        class: 'plan-pill' + (isSelected ? ' selected' : ''),
-        onclick: () => {
-          u.plan = p.id;
-          selected = p.id;
-          rerender();
-        }
-      });
-      // Badge slot always present so heights stay consistent
-      const badgeSlot = h('div', { class: 'plan-pill-badge-slot' });
-      if (isRecommended) {
-        badgeSlot.appendChild(h('span', { class: 'plan-pill-fit' }, 'YOUR FIT'));
-      }
-      pill.appendChild(badgeSlot);
-      pill.appendChild(h('div', { class: 'plan-pill-num' }, String(p.mornings)));
-      pill.appendChild(h('div', { class: 'plan-pill-label' }, 'mornings/wk'));
-      pill.appendChild(h('div', { class: 'plan-pill-price' }, '$' + p.weekly));
-      planRow.appendChild(pill);
-    });
-    content.appendChild(planRow);
-
     // Receipt — the value proposition
-    content.appendChild(buildReceiptCard(u, selectedPlan));
+    content.appendChild(buildReceiptCard(u));
 
     view.appendChild(content);
 
@@ -2947,13 +2875,12 @@
     footer.appendChild(h('button', {
       class: 'btn primary',
       onclick: () => {
-        u.plan = selected;
         u.onboarded = true;
         startTodayOrder('scheduled');
         saveState();
         navigate('onboardDone', {}, { transition: 'up' });
       }
-    }, 'Start TimBot — $' + selectedPlan.weekly + '/wk'));
+    }, 'Start TimBot — $' + ctaBundle.toFixed(2) + '/wk'));
     view.appendChild(footer);
 
     function rerender() {
@@ -2971,22 +2898,38 @@
   // ---- Receipt card ----
   // Computes honest weekly math from the user's usual + selected plan.
   // Multiplier = plan.mornings (what the bundle covers each week).
-  function buildReceiptCard(u, plan) {
+  // ===== Subscription math =====
+  // The bundle is a flat 30% off the user's à la carte total. Every input
+  // flows from earlier steps:
+  //   drink + size + cream/sugar  (step 1)
+  //   food                        (step 1)
+  //   N = scheduled days/week     (step 2)
+  // subtotal = (drinkPrice + foodPrices) × N
+  // bundle   = subtotal × 0.70    ("You pay")
+  // savings  = subtotal × 0.30    ("You save")
+  const BUNDLE_DISCOUNT = 0.30;
+
+  // Centralized math — used by the receipt card, the CTA text on step 3,
+  // and any settings/dashboard surface that needs to display the price.
+  function bundleMath(u) {
+    if (!u || !u.usual) return { N: 0, subtotal: 0, bundle: 0, savings: 0, perMorning: 0, drinkPrice: 0, foodItems: [] };
     const drink = DRINKS.find(d => d.id === u.usual.drink);
     const sizeMult = drink?.noSize ? 1 : (SIZE_MULT[u.usual.size] || 1);
     const drinkPrice = drink ? +(drink.price * sizeMult).toFixed(2) : 0;
     const foodItems = (u.usual.food || []).map(fid => FOODS.find(f => f.id === fid)).filter(Boolean);
+    const N = (u.schedule?.days?.filter(Boolean).length) || 1;
+    const foodTotal = foodItems.reduce((s, f) => s + f.price, 0);
+    const subtotal = +((drinkPrice + foodTotal) * N).toFixed(2);
+    const bundle = +(subtotal * (1 - BUNDLE_DISCOUNT)).toFixed(2);
+    const savings = +(subtotal - bundle).toFixed(2);
+    const perMorning = N > 0 ? +(bundle / N).toFixed(2) : 0;
+    return { N, drinkPrice, foodItems, subtotal, bundle, savings, perMorning, drink };
+  }
 
-    // Multiplier = the days the user actually scheduled on step 2.
-    // Falls back to plan.mornings only if no schedule exists yet (defensive).
-    const scheduledDays = u.schedule?.days?.filter(Boolean).length || 0;
-    const N = scheduledDays > 0 ? scheduledDays : plan.mornings;
+  function buildReceiptCard(u) {
+    const { N, drinkPrice, foodItems, subtotal, bundle, savings, perMorning, drink } = bundleMath(u);
     const drinkLine = +(drinkPrice * N).toFixed(2);
     const foodLines = foodItems.map(f => ({ name: f.name, unit: f.price, line: +(f.price * N).toFixed(2) }));
-    const subtotal = +(drinkLine + foodLines.reduce((s, l) => s + l.line, 0)).toFixed(2);
-    const bundle = plan.weekly;
-    const savings = +(subtotal - bundle).toFixed(2);
-    const perMorning = +(bundle / N).toFixed(2);
 
     const card = h('div', { class: 'card lift', style: { padding: '20px 22px 22px' } });
 
@@ -3106,7 +3049,7 @@
     const summary = h('div', { class: 'card mt-16', style: { width: '100%' } },
       h('div', { class: 'flex between center-y' },
         h('span', { class: 'eyebrow mute' }, 'Your routine'),
-        h('span', { class: 'badge dark' }, u.plan + ' MORNINGS/WK')
+        h('span', { class: 'badge dark', style: { whiteSpace: 'nowrap' } }, (u.schedule?.days?.filter(Boolean).length || 0) + ' MORNINGS/WK')
       ),
       h('div', { class: 'mt-8 small' }, fmtOrderSummary(u.usual)),
       h('div', { class: 'small mute mt-4' }, `${u.schedule.days.filter(Boolean).length} days · ${formatTime(u.schedule.time)} · ${(u.store || '').split(',')[0]}`)
@@ -3695,17 +3638,18 @@
         ),
         h('div', { class: 'small mute' }, `Member since ${MONTH_NAMES[new Date(u.createdAt).getMonth()]} ${new Date(u.createdAt).getFullYear()}`),
         h('div', { class: 'small mt-4' },
-          h('span', { class: 'badge dark', style: { fontSize: '9px' } }, `${u.plan} MORNINGS/WK`)
+          h('span', { class: 'badge dark', style: { fontSize: '9px', whiteSpace: 'nowrap' } }, (u.schedule?.days?.filter(Boolean).length || 0) + ' MORNINGS/WK')
         )
       )
     );
     content.appendChild(profile);
 
     // sections
+    const settingsMath = bundleMath(u);
     const sec = h('div', { class: 'card', style: { padding: '4px 16px' } });
     sec.appendChild(makeSettingRow('☕', 'My usual', fmtOrderSummary(u.usual) || 'Not set', () => navigate('onboard1', {}, { transition: 'right' })));
-    sec.appendChild(makeSettingRow('📅', 'Schedule', `${u.schedule?.days.filter(Boolean).length} days · ${formatTime(u.schedule?.time)}`, () => navigate('onboard2', {}, { transition: 'right' })));
-    sec.appendChild(makeSettingRow('💳', 'Plan', `${u.plan} mornings/week · $${PLANS.find(p => p.id === u.plan)?.weekly}/wk`, () => navigate('onboard3', {}, { transition: 'right' })));
+    sec.appendChild(makeSettingRow('📅', 'Schedule', `${u.schedule?.days?.filter(Boolean).length || 0} days · ${formatTime(u.schedule?.time)}`, () => navigate('onboard2', {}, { transition: 'right' })));
+    sec.appendChild(makeSettingRow('💳', 'Subscription', `$${settingsMath.bundle.toFixed(2)}/wk · 30% off à la carte`, () => navigate('onboard3', {}, { transition: 'right' })));
     sec.appendChild(makeSettingRow('📍', 'Pickup', u.store?.split(',')[0] || '—', () => navigate('onboard2', {}, { transition: 'right' })));
     content.appendChild(sec);
 
