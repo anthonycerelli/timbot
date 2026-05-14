@@ -2977,7 +2977,10 @@
     const drinkPrice = drink ? +(drink.price * sizeMult).toFixed(2) : 0;
     const foodItems = (u.usual.food || []).map(fid => FOODS.find(f => f.id === fid)).filter(Boolean);
 
-    const N = plan.mornings;
+    // Multiplier = the days the user actually scheduled on step 2.
+    // Falls back to plan.mornings only if no schedule exists yet (defensive).
+    const scheduledDays = u.schedule?.days?.filter(Boolean).length || 0;
+    const N = scheduledDays > 0 ? scheduledDays : plan.mornings;
     const drinkLine = +(drinkPrice * N).toFixed(2);
     const foodLines = foodItems.map(f => ({ name: f.name, unit: f.price, line: +(f.price * N).toFixed(2) }));
     const subtotal = +(drinkLine + foodLines.reduce((s, l) => s + l.line, 0)).toFixed(2);
@@ -2989,7 +2992,7 @@
 
     card.appendChild(h('div', { class: 'flex between center-y', style: { marginBottom: '14px' } },
       h('div', { class: 'eyebrow' }, 'Your weekly bundle'),
-      h('span', { class: 'badge dark' }, `${N} ${N === 1 ? 'MORNING' : 'MORNINGS'}`)
+      h('span', { class: 'badge dark' }, `${N} ${N === 1 ? 'MORNING' : 'MORNINGS'} / WK`)
     ));
 
     // Item rows — own container, breathes
